@@ -1,5 +1,14 @@
 {
     "deno.enable": true,
     "deno.lint": true,
-    "deno.unstable": false
+    "deno.unstable": false,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "binance",
+            "database": "${workspaceFolder:buyingPowerLookup}/db/binance.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
 }
