@@ -1,1 +1,1 @@
-export const FIAT_CURRENCY = 'EUR';
+export const fiatCurrency = 'EUR';

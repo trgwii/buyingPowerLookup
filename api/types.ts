@@ -1,8 +1,7 @@
-export type balance = {
-    asset: string;
-    free: string;
-    locked: string;
-}
+import { z } from "../deps.ts";
+import { balance } from "./validators.ts";
+export type balanceType = z.infer<typeof balance>;
+
 export type coingeckoInfo = {
         id: string;
         symbol: string;
