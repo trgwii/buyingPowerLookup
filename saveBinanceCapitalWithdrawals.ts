@@ -1,3 +1,4 @@
+import { binance } from './api/binance.ts';
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
@@ -16,19 +17,23 @@ binanceDB.query(`
     info                     VARCHAR(100),
     confirmNo                INTEGER,
     walletType               INTEGER,
+    txKey                    VARCHAR(100),
     UNIQUE(txId)
   )
 `);
 
-const binanceCacheFile = './cache/sapi/v1/capital/withdraw/history.json';
-const cachedDataText = await Deno.readTextFile(binanceCacheFile);
-const cachedCapitalWithdraws = JSON.parse(cachedDataText);
-if(!cachedCapitalWithdraws.length) Deno.exit(1);
-const cachedSuccessfulCapitalWithdraws = cachedCapitalWithdraws.filter(
-  ( cachedCapitalWithdraw: any) => cachedCapitalWithdraw.status === 6
+const capitalWithdrawResponse = await binance.withdrawHistory();
+if(capitalWithdrawResponse.status !== 200){
+  console.log(capitalWithdrawResponse.statusText);
+  Deno.exit(1);
+}
+const capitalWithdraws = capitalWithdrawResponse.data;
+const successfulCapitalWithdraws = capitalWithdraws.filter(
+  ( capitalWithdraws: any) => capitalWithdraws.status === 6
 );
-for (const cachedSuccessfulCapitalWithdraw of cachedSuccessfulCapitalWithdraws) {
-  console.log(cachedSuccessfulCapitalWithdraw);
+if(!successfulCapitalWithdraws.length) Deno.exit(1);
+for (const successfulCapitalWithdraw of successfulCapitalWithdraws) {
+  console.log(successfulCapitalWithdraw);
   binanceDB.query(`INSERT OR IGNORE INTO cWithdraw (
     id,
     amount,
@@ -42,7 +47,8 @@ for (const cachedSuccessfulCapitalWithdraw of cachedSuccessfulCapitalWithdraws) 
     transferType,
     info,
     confirmNo,
-    walletType
+    walletType,
+    txKey
   ) VALUES (
     :id,
     :amount,
@@ -56,6 +62,8 @@ for (const cachedSuccessfulCapitalWithdraw of cachedSuccessfulCapitalWithdraws) 
     :transferType,
     :info,
     :confirmNo,
-    :walletType
-  )`, cachedSuccessfulCapitalWithdraw);
+    :walletType,
+    :txKey
+  )`, successfulCapitalWithdraw);
 }
+binanceDB.close();
