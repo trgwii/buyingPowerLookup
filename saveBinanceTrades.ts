@@ -40,65 +40,68 @@ const allSymbols = exchangeInfo.symbols
 .map((value: any) => ({ value, sort: Math.random() }))
 .sort((a: any, b: any) => a.sort - b.sort)
 .map(({ value }: any) => value);
-let ipWeight = 0;
 for ( const symbol of allSymbols) {
-    const allOrdersRequest = binance.allOrders(symbol);
-    allOrdersRequest.catch(console.error);
-    console.log(ipWeight);
-    ipWeight += 10;
-    if(ipWeight >= 1190){
-      await sleep(60);
-      ipWeight = 0;
-    }
-    const allOrdersResponse = await allOrdersRequest;
-    if(allOrdersResponse.status !== 200) {
-        console.error(allOrdersResponse.statusText);
+    try {
+      const allOrdersRequest = binance.allOrders(symbol);
+      allOrdersRequest.catch(console.error);
+      console.log(`trying requesting data for ${symbol}`);
+      const allOrdersResponse = await allOrdersRequest;
+      const allOrders = allOrdersResponse.data;
+      const filledOrders = allOrders.filter((order: any) => order.status === 'FILLED');
+      if(!filledOrders.length) continue;
+      for (const filledOrder of filledOrders) {
+        console.log(filledOrder);
+        binanceDB.query(`INSERT OR IGNORE INTO trade (
+          symbol,
+          orderId,
+          orderListId,
+          clientOrderId,
+          price,
+          origQty,
+          executedQty,
+          cummulativeQuoteQty,
+          status,
+          timeInForce,
+          type,
+          side,
+          stopPrice,
+          icebergQty,
+          time,
+          updateTime,
+          isWorking,
+          origQuoteOrderQty
+        ) VALUES (
+          :symbol,
+          :orderId,
+          :orderListId,
+          :clientOrderId,
+          :price,
+          :origQty,
+          :executedQty,
+          :cummulativeQuoteQty,
+          :status,
+          :timeInForce,
+          :type,
+          :side,
+          :stopPrice,
+          :icebergQty,
+          :time,
+          :updateTime,
+          :isWorking,
+          :origQuoteOrderQty
+        )`, filledOrder);
+      }
+    } catch (error) {
+      const timeout = Number(error.response.headers.get('retry-after'));
+      if(timeout > 0) {
+        console.log(`waiting ${timeout} seconds`);
+        await sleep(timeout);
+        allSymbols.unshift(symbol);
+        console.log(`adding ${symbol} back to the list`);
+      } else  {
+        console.error(error.response.data.msg);
         break;
-    }
-    const allOrders = allOrdersResponse.data;
-    const filledOrders = allOrders.filter((order: any) => order.status === 'FILLED');
-    if(!filledOrders.length) continue;
-    for (const filledOrder of filledOrders) {
-      console.log(filledOrder);
-      binanceDB.query(`INSERT OR IGNORE INTO trade (
-        symbol,
-        orderId,
-        orderListId,
-        clientOrderId,
-        price,
-        origQty,
-        executedQty,
-        cummulativeQuoteQty,
-        status,
-        timeInForce,
-        type,
-        side,
-        stopPrice,
-        icebergQty,
-        time,
-        updateTime,
-        isWorking,
-        origQuoteOrderQty
-      ) VALUES (
-        :symbol,
-        :orderId,
-        :orderListId,
-        :clientOrderId,
-        :price,
-        :origQty,
-        :executedQty,
-        :cummulativeQuoteQty,
-        :status,
-        :timeInForce,
-        :type,
-        :side,
-        :stopPrice,
-        :icebergQty,
-        :time,
-        :updateTime,
-        :isWorking,
-        :origQuoteOrderQty
-      )`, filledOrder);
+      }
     }
 }
 binanceDB.close();
