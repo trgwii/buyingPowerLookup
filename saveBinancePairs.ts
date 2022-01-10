@@ -1,4 +1,4 @@
-import { binance, autoRetry } from './api/binance.ts';
+import { autoRetry, binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
@@ -12,16 +12,19 @@ binanceDB.query(`
   )
 `);
 const exchangeInfoResponse = await binance.exchangeInfo();
-if(exchangeInfoResponse.status !== 200) {
+if (exchangeInfoResponse.status !== 200) {
   console.error(exchangeInfoResponse.statusText);
   Deno.exit(1);
 }
 const exchangeInfo = exchangeInfoResponse.data;
 for (const symbol of exchangeInfo.symbols) {
-    binanceDB.query(`INSERT OR IGNORE INTO pair (
+  binanceDB.query(
+    `INSERT OR IGNORE INTO pair (
         symbol,
         baseAsset,
         quoteAsset
-    ) VALUES ( ?, ?, ?)`, [symbol.symbol, symbol.baseAsset, symbol.quoteAsset]);
+    ) VALUES ( ?, ?, ?)`,
+    [symbol.symbol, symbol.baseAsset, symbol.quoteAsset],
+  );
 }
 binanceDB.close();

@@ -18,26 +18,30 @@ binanceDB.query(`
   )
 `);
 
-import { binance } from './api/binance.ts';
+import { binance } from "./api/binance.ts";
 
 for (let m = 1; m <= 12; m++) {
-    const mString = m.toString().length === 1 ?`0${m}` :m.toString();
-    const lastDayOfMonth = new Date(2021, m +1, 0).getDate();
-    const startTime = Date.parse(`2021-${mString}-01`);
-    const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
-    const convertTradeHistoryResponse = await binance.convertTradeHistory(startTime, endTime);
-    if(convertTradeHistoryResponse.status !== 200) {
-        console.error(convertTradeHistoryResponse.statusText);
-        break;
-    }
-    const convertTradeHistoryData = convertTradeHistoryResponse.data;
-    if(!convertTradeHistoryData) continue;
-    const convertTradeHistory = convertTradeHistoryData.list;
-    if(!convertTradeHistory.length) continue;
-    for (const convertTrade of convertTradeHistory) {
-      if(convertTrade.orderStatus !== 'SUCCESS') continue;
-      console.log(convertTrade);
-      binanceDB.query(`INSERT OR IGNORE INTO conversion (
+  const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+  const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
+  const startTime = Date.parse(`2021-${mString}-01`);
+  const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
+  const convertTradeHistoryResponse = await binance.convertTradeHistory(
+    startTime,
+    endTime,
+  );
+  if (convertTradeHistoryResponse.status !== 200) {
+    console.error(convertTradeHistoryResponse.statusText);
+    break;
+  }
+  const convertTradeHistoryData = convertTradeHistoryResponse.data;
+  if (!convertTradeHistoryData) continue;
+  const convertTradeHistory = convertTradeHistoryData.list;
+  if (!convertTradeHistory.length) continue;
+  for (const convertTrade of convertTradeHistory) {
+    if (convertTrade.orderStatus !== "SUCCESS") continue;
+    console.log(convertTrade);
+    binanceDB.query(
+      `INSERT OR IGNORE INTO conversion (
         quoteId,
         orderId,
         orderStatus,
@@ -59,7 +63,9 @@ for (let m = 1; m <= 12; m++) {
         :ratio,
         :inverseRatio,
         :createTime
-      )`, convertTrade);
-    }
+      )`,
+      convertTrade,
+    );
+  }
 }
 binanceDB.close();

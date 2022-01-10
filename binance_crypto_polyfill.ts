@@ -1,35 +1,43 @@
 // Copyright 2018-2021 the Deno authors. All rights reserved. MIT license.
 // Copyright Joyent, Inc. and Node.js contributors. All rights reserved. MIT license.
 import { default as randomBytes } from "https://deno.land/std@0.119.0/node/_crypto/randomBytes.ts";
-import randomFill, { randomFillSync } from "https://deno.land/std@0.119.0/node/_crypto/randomFill.ts";
+import randomFill, {
+  randomFillSync,
+} from "https://deno.land/std@0.119.0/node/_crypto/randomFill.ts";
 import randomInt from "https://deno.land/std@0.119.0/node/_crypto/randomInt.ts";
 import {
   crypto as wasmCrypto,
   DigestAlgorithm,
   digestAlgorithms,
 } from "https://deno.land/std@0.119.0/_wasm_crypto/mod.ts";
-import { pbkdf2, pbkdf2Sync } from "https://deno.land/std@0.119.0/node/_crypto/pbkdf2.ts";
+import {
+  pbkdf2,
+  pbkdf2Sync,
+} from "https://deno.land/std@0.119.0/node/_crypto/pbkdf2.ts";
 import { Buffer } from "https://deno.land/std@0.119.0/node/buffer.ts";
 import { Transform } from "https://deno.land/std@0.119.0/node/stream.ts";
 import { encode as encodeToHex } from "https://deno.land/std@0.119.0/encoding/hex.ts";
 import { encode as encodeToBase64 } from "https://deno.land/std@0.119.0/encoding/base64.ts";
-import { scrypt, scryptSync } from "https://deno.land/std@0.119.0/node/_crypto/scrypt.ts";
+import {
+  scrypt,
+  scryptSync,
+} from "https://deno.land/std@0.119.0/node/_crypto/scrypt.ts";
 import { timingSafeEqual } from "https://deno.land/std@0.119.0/node/_crypto/timingSafeEqual.ts";
 import type { TransformOptions } from "https://deno.land/std@0.119.0/node/_stream.d.ts";
 
-const coerceToBytes = (data: string | BufferSource): Uint8Array => {
-  if (data instanceof Uint8Array) {
-    return data;
-  } else if (typeof data === "string") {
-    // This assumes UTF-8, which may not be correct.
-    return new TextEncoder().encode(data);
-  } else if (ArrayBuffer.isView(data)) {
+const coerceToBytes = (data: string | BufferSource) => {
+  if (data instanceof Uint8Array) return data;
+
+  // This assumes UTF-8, which may not be correct.
+  if (typeof data === "string") return new TextEncoder().encode(data);
+
+  if (ArrayBuffer.isView(data)) {
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-  } else if (data instanceof ArrayBuffer) {
-    return new Uint8Array(data);
-  } else {
-    throw new TypeError("expected data to be string | BufferSource");
   }
+
+  if (data instanceof ArrayBuffer) return new Uint8Array(data);
+
+  throw new TypeError("expected data to be string | BufferSource");
 };
 
 /**
@@ -162,11 +170,12 @@ export function createHmac(algorithm: string, key: string) {
   let buf: string[] = [];
   const Hmac = {
     update: (data: string) => {
-      buf.push(data); return Hmac;
+      buf.push(data);
+      return Hmac;
     },
     digest: (format: string) => {
-      return hmac(algorithm, key, buf.join(''), "utf8", format);
-    }
+      return hmac(algorithm, key, buf.join(""), "utf8", format);
+    },
   };
   return Hmac;
 }

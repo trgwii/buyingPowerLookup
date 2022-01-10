@@ -1,4 +1,4 @@
-import { binance } from './api/binance.ts';
+import { binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
@@ -18,18 +18,19 @@ binanceDB.query(`
   )
 `);
 const fiatDepositResponse = await binance.depositWithdrawalHistory(0);
-if(fiatDepositResponse.status !== 200){
+if (fiatDepositResponse.status !== 200) {
   console.log(fiatDepositResponse.statusText);
   Deno.exit(1);
 }
 const fiatDepositData = fiatDepositResponse.data;
 const fiatDeposits = fiatDepositData.data;
 const successfulFiatDeposits = fiatDeposits.filter(
-  ( fiatDeposit: any) => fiatDeposit.status === 'Successful'
+  (fiatDeposit: any) => fiatDeposit.status === "Successful",
 );
-if(!successfulFiatDeposits.length) Deno.exit(1);
+if (!successfulFiatDeposits.length) Deno.exit(1);
 for (const successfulFiatDeposit of successfulFiatDeposits) {
-  binanceDB.query(`INSERT OR IGNORE INTO deposit (
+  binanceDB.query(
+    `INSERT OR IGNORE INTO deposit (
     orderNo,
     fiatCurrency,
     indicatedAmount,
@@ -49,6 +50,8 @@ for (const successfulFiatDeposit of successfulFiatDeposits) {
     :status,
     :createTime,
     :updateTime
-  )`, successfulFiatDeposit);
+  )`,
+    successfulFiatDeposit,
+  );
 }
 binanceDB.close();
