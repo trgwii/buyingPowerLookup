@@ -8,7 +8,7 @@ binanceDB.query(`
     tradeValueID INTEGER PRIMARY KEY AUTOINCREMENT,
     id                  INTEGER,
     type                CHARACTER(20),
-    value               FLOAT,
+    value               DECIMAL(10, 2),
     UNIQUE(id)
   )
 `);
@@ -30,7 +30,7 @@ for (const tradeData of allTrades) {
                 id,
                 type,
                 value
-            ) VALUES ( ?, ?, ?)`,
+            ) VALUES ( ?, ?, round(?,2))`,
       [
         String(tradeID),
         "trade",
@@ -71,7 +71,7 @@ for (const tradeData of allTrades) {
         id,
         type,
         value
-    ) VALUES ( ?, ?, ?)`,
+    ) VALUES ( ?, ?, round(?,2))`,
     [
       String(tradeID),
       "trade",
