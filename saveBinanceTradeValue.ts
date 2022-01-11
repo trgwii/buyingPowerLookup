@@ -62,10 +62,12 @@ for (const tradeData of allTrades) {
   }
   const klinesData = klinesResponse.data;
   const firstCandle = klinesData[0];
-  const candleOpenPrice = firstCandle[1];
+  const candleOpenPrice = Number(firstCandle[1]);
+  const candleClosePrice = Number(firstCandle[4]);
+  const candleAvgPrice = (candleOpenPrice + candleClosePrice) / 2;
   const referencePrice = String(side) === "BUY"
-    ? 1 / Number(candleOpenPrice)
-    : Number(price) / Number(candleOpenPrice);
+    ? 1 / candleAvgPrice
+    : Number(price) / candleAvgPrice;
   binanceDB.query(
     `INSERT OR IGNORE INTO tradeValue (
         id,
