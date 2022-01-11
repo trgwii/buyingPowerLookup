@@ -51,7 +51,7 @@ for (const tradeData of allTrades) {
       await binance.klines(
         String(referenceSymbol),
         "1m",
-        { limit: 1, startTime: Number(time) },
+        { limit: 1, startTime: new Date(Number(time)).setSeconds(0, 0) },
       ),
   );
   if (!klinesResponse) break;
