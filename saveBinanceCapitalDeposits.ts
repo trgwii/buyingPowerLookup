@@ -1,4 +1,4 @@
-import { binance } from './api/binance.ts';
+import { binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
@@ -23,11 +23,12 @@ binanceDB.query(`
 
 const capitalDepositsResponse = await binance.depositHistory();
 const capitalDeposits = capitalDepositsResponse.data;
-if(!capitalDeposits.length) Deno.exit(1);
+if (!capitalDeposits.length) Deno.exit(1);
 
 for (const capitalDeposit of capitalDeposits) {
   console.log(capitalDeposit);
-  binanceDB.query(`INSERT OR IGNORE INTO cDeposit (
+  binanceDB.query(
+    `INSERT OR IGNORE INTO cDeposit (
     amount,
     coin,
     network,
@@ -53,6 +54,8 @@ for (const capitalDeposit of capitalDeposits) {
     :confirmTimes,
     :unlockConfirm,
     :walletType
-  )`, capitalDeposit);
+  )`,
+    capitalDeposit,
+  );
 }
 binanceDB.close();

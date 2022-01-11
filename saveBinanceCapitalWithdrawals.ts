@@ -1,4 +1,4 @@
-import { binance } from './api/binance.ts';
+import { binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
@@ -23,18 +23,19 @@ binanceDB.query(`
 `);
 
 const capitalWithdrawResponse = await binance.withdrawHistory();
-if(capitalWithdrawResponse.status !== 200){
+if (capitalWithdrawResponse.status !== 200) {
   console.log(capitalWithdrawResponse.statusText);
   Deno.exit(1);
 }
 const capitalWithdraws = capitalWithdrawResponse.data;
 const successfulCapitalWithdraws = capitalWithdraws.filter(
-  ( capitalWithdraws: any) => capitalWithdraws.status === 6
+  (capitalWithdraws: any) => capitalWithdraws.status === 6,
 );
-if(!successfulCapitalWithdraws.length) Deno.exit(1);
+if (!successfulCapitalWithdraws.length) Deno.exit(1);
 for (const successfulCapitalWithdraw of successfulCapitalWithdraws) {
   console.log(successfulCapitalWithdraw);
-  binanceDB.query(`INSERT OR IGNORE INTO cWithdraw (
+  binanceDB.query(
+    `INSERT OR IGNORE INTO cWithdraw (
     id,
     amount,
     transactionFee,
@@ -64,6 +65,8 @@ for (const successfulCapitalWithdraw of successfulCapitalWithdraws) {
     :confirmNo,
     :walletType,
     :txKey
-  )`, successfulCapitalWithdraw);
+  )`,
+    successfulCapitalWithdraw,
+  );
 }
 binanceDB.close();

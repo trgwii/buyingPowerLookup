@@ -1,4 +1,4 @@
-import { binance, autoRetry } from './api/binance.ts';
+import { autoRetry, binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { scrambleArray } from "./utils.ts";
 const binanceDB = new DB("db/binance.db");
@@ -27,28 +27,31 @@ binanceDB.query(`
     UNIQUE(orderId)
   )
 `);
-const pairs = binanceDB.query('SELECT symbol FROM pair');
+const pairs = binanceDB.query("SELECT symbol FROM pair");
 const allSymbols = pairs.map(
-  (pair: any) => pair[0]
-  )
-  console.log(allSymbols);
+  (pair: any) => pair[0],
+);
+console.log(allSymbols);
 const allSymbolsScrambled = scrambleArray(allSymbols);
 
-for ( const symbol of allSymbolsScrambled) {
+for (const symbol of allSymbolsScrambled) {
   console.log(`trying requesting data for ${symbol}`);
-  const allOrdersResponse = await autoRetry(()=>binance.allOrders(symbol));
-  if(!allOrdersResponse) break;
-  if( allOrdersResponse === true){
+  const allOrdersResponse = await autoRetry(() => binance.allOrders(symbol));
+  if (!allOrdersResponse) break;
+  if (allOrdersResponse === true) {
     allSymbolsScrambled.unshift(symbol);
     console.log(`adding ${symbol} back to the list`);
     continue;
   }
   const allOrders = allOrdersResponse.data;
-  const filledOrders = allOrders.filter((order: any) => order.status === 'FILLED');
-  if(!filledOrders.length) continue;
+  const filledOrders = allOrders.filter((order: any) =>
+    order.status === "FILLED"
+  );
+  if (!filledOrders.length) continue;
   for (const filledOrder of filledOrders) {
     console.log(filledOrder);
-    binanceDB.query(`INSERT OR IGNORE INTO trade (
+    binanceDB.query(
+      `INSERT OR IGNORE INTO trade (
       symbol,
       orderId,
       orderListId,
@@ -86,7 +89,9 @@ for ( const symbol of allSymbolsScrambled) {
       :updateTime,
       :isWorking,
       :origQuoteOrderQty
-    )`, filledOrder);
+    )`,
+      filledOrder,
+    );
   }
 }
 binanceDB.close();
