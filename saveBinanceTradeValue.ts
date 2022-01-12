@@ -6,18 +6,17 @@ const binanceDB = new DB("db/binance.db");
 binanceDB.query(`
   CREATE TABLE IF NOT EXISTS tradeValue (
     tradeValueID INTEGER PRIMARY KEY AUTOINCREMENT,
-    id                  INTEGER,
-    type                CHARACTER(20),
+    id                  TEXT,
     value               FLOAT,
     UNIQUE(id)
   )
 `);
 
 const allTrades = binanceDB.query(
-  "SELECT tradeID, symbol, time, side, price FROM trade",
+  "SELECT tradeID, symbol, time, side, price, 'conversion' AS 'tableName' FROM trade",
 );
 for (const tradeData of allTrades) {
-  const [tradeID, symbol, time, side, price] = tradeData;
+  const [tradeID, symbol, time, side, price, tableName] = tradeData;
   console.log(`iteration symbol: ${symbol}`);
   const quoteAssetData = binanceDB.query(
     "SELECT quoteAsset FROM pair WHERE symbol = ?",
@@ -28,20 +27,18 @@ for (const tradeData of allTrades) {
     binanceDB.query(
       `INSERT OR IGNORE INTO tradeValue (
                 id,
-                type,
                 value
-            ) VALUES ( ?, ?, ?)`,
+            ) VALUES ( ?, ?)`,
       [
-        String(tradeID),
-        "trade",
+        String(tableName) + String(tradeID),
         Number(price),
       ],
     );
     continue;
   }
   const referenceSymbolData = binanceDB.query(
-    "SELECT symbol FROM pair WHERE symbol = ?",
-    [`${fiatCurrency}${quoteAsset}`],
+    "SELECT symbol FROM pair WHERE symbol IN (?,?)",
+    [`${fiatCurrency}${quoteAsset}`, `${quoteAsset}${fiatCurrency}`],
   );
   const referenceSymbol = referenceSymbolData[0];
   if (!referenceSymbol) continue;
@@ -65,21 +62,21 @@ for (const tradeData of allTrades) {
   const candleOpenPrice = Number(firstCandle[1]);
   const candleClosePrice = Number(firstCandle[4]);
   const candleAvgPrice = (candleOpenPrice + candleClosePrice) / 2;
-  const referencePrice = String(side) === "BUY"
+  const referencePrice = String(referenceSymbol).endsWith(fiatCurrency)
+    ? candleAvgPrice
+    : String(side) === "BUY"
     ? 1 / candleAvgPrice
     : Number(price) / candleAvgPrice;
   binanceDB.query(
     `INSERT OR IGNORE INTO tradeValue (
         id,
-        type,
         value
-    ) VALUES ( ?, ?, ?)`,
+    ) VALUES ( ?, ?)`,
     [
-      String(tradeID),
-      "trade",
+      String(tableName) + String(tradeID),
       Number(referencePrice),
     ],
   );
-  console.log(quoteAsset, candleOpenPrice);
+  console.log(quoteAsset, candleAvgPrice);
 }
 binanceDB.close();
