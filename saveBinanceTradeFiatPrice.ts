@@ -4,34 +4,19 @@ import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
 binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS tradeValue (
+  CREATE TABLE IF NOT EXISTS tradeFiatPrice (
     tradeValueID INTEGER PRIMARY KEY AUTOINCREMENT,
-    id                  TEXT,
-    value               FLOAT,
-    UNIQUE(id)
+    tradeID                  INTEGER,
+    fiatPrice                FLOAT,
+    FOREIGN KEY(tradeID) REFERENCES trade(tradeID)
   )
 `);
 
 const allTrades = binanceDB.query(
-  `SELECT conversionID as 'tradeID',
-  CASE WHEN fromAsset = '${fiatCurrency}'
-  THEN toAsset || fromAsset
-  ELSE fromAsset || toAsset
-  END AS 'symbol',
-  createTime as 'time',
-  CASE WHEN fromAsset = '${fiatCurrency}'
-  THEN 'BUY'
-  ELSE 'SELL'
-  END AS 'side',
-  CASE WHEN fromAsset = '${fiatCurrency}'
-  THEN inverseRatio
-  ELSE ratio
-  END AS 'price',
-  'conversion' AS 'tableName'
-  FROM conversion`,
+  "SELECT tradeID, symbol, time, side, price FROM trade",
 );
 for (const tradeData of allTrades) {
-  const [tradeID, symbol, time, side, price, tableName] = tradeData;
+  const [tradeID, symbol, time, side, price] = tradeData;
   console.log(`iteration symbol: ${symbol}`);
   const quoteAssetData = binanceDB.query(
     "SELECT quoteAsset FROM pair WHERE symbol = ?",
@@ -40,12 +25,12 @@ for (const tradeData of allTrades) {
   const quoteAsset = String(quoteAssetData[0]);
   if (quoteAsset === fiatCurrency.toUpperCase()) {
     binanceDB.query(
-      `INSERT OR IGNORE INTO tradeValue (
-                id,
-                value
+      `INSERT OR IGNORE INTO tradeFiatPrice (
+                tradeID,
+                fiatPrice
             ) VALUES ( ?, ?)`,
       [
-        String(tableName) + String(tradeID),
+        Number(tradeID),
         Number(price),
       ],
     );
@@ -83,12 +68,12 @@ for (const tradeData of allTrades) {
     ? 1 / candleAvgPrice
     : Number(price) / candleAvgPrice;
   binanceDB.query(
-    `INSERT OR IGNORE INTO tradeValue (
-        id,
-        value
+    `INSERT OR IGNORE INTO tradeFiatPrice (
+        tradeID,
+        fiatPrice
     ) VALUES ( ?, ?)`,
     [
-      String(tableName) + String(tradeID),
+      Number(tradeID),
       Number(referencePrice),
     ],
   );
