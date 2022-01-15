@@ -1,18 +1,21 @@
 SELECT
-datetime(`time`/1000, 'unixepoch'),
-symbol,
-CASE WHEN side LIKE "BUY"
+datetime(time/1000, 'unixepoch') AS 'datetime',
+pair.quoteAsset,
+CASE WHEN side = 'BUY'
 THEN cummulativeQuoteQty
 ELSE executedQty
-END AS 'qty',
-CASE WHEN side LIKE "BUY"
+END AS 'amount',
+CASE WHEN side LIKE 'BUY'
 THEN ROUND(
-    cummulativeQuoteQty * value, 2
+fiatPrice, 2
 )
 ELSE ROUND(
-    executedQty * value, 2
+fiatPrice, 2
 )
-END AS "amount"
+END AS "price"
 FROM trade
-JOIN tradeValue
-ON trade.tradeID = tradeValue.id
+JOIN tradeFiatPrice
+ON trade.tradeID = tradeFiatPrice.tradeID
+JOIN pair
+ON trade.symbol = pair.symbol
+WHERE datetime LIKE '2021%'
