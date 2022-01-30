@@ -29,9 +29,9 @@ for (const tradeData of allTrades) {
   if (!pairData[0] || pairData[0].length !== 2) continue;
   const assetData = pairData[0];
   if (!Array.isArray(assetData) || assetData.length !== 2) continue;
-  const [assetIn, assetOut] = assetData;
-  const avgPriceIn = await fetchAssetPrice(String(assetIn), Number(time));
-  if (avgPriceIn && typeof avgPriceIn === "number") {
+  const [baseAsset, quoteAsset] = assetData;
+  const avgPriceQuote = await fetchAssetPrice(String(quoteAsset), Number(time));
+  if (avgPriceQuote && typeof avgPriceQuote === "number") {
     binanceDB.query(
       `INSERT OR IGNORE INTO \`transaction\` (
             type,
@@ -53,46 +53,45 @@ for (const tradeData of allTrades) {
       [
         "trade",
         Number(tradeID),
-        String(assetIn),
-        side === "BUY" ? "IN" : "OUT",
-        Number(origQty),
-        Number(avgPriceIn),
-        Number(time),
-      ],
-    );
-    console.log(assetOut, avgPriceIn);
-  }
-  const avgPriceOut = await fetchAssetPrice(String(assetOut), Number(time));
-  if (avgPriceOut && typeof avgPriceOut === "number") {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO \`transaction\` (
-            type,
-            refId,
-            asset,
-            side,
-            amount,
-            price,
-            timestamp
-          ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
-          )`,
-      [
-        "trade",
-        Number(tradeID),
-        String(assetOut),
+        String(quoteAsset),
         side === "SELL" ? "IN" : "OUT",
         Number(cummulativeQuoteQty),
-        Number(avgPriceOut),
+        Number(avgPriceQuote),
         Number(time),
       ],
     );
-    console.log(assetOut, avgPriceOut);
+    console.log(quoteAsset, avgPriceQuote);
   }
+  const avgPriceBase = Number(cummulativeQuoteQty) * Number(avgPriceQuote) /
+    Number(origQty);
+  binanceDB.query(
+    `INSERT OR IGNORE INTO \`transaction\` (
+          type,
+          refId,
+          asset,
+          side,
+          amount,
+          price,
+          timestamp
+        ) VALUES (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?
+        )`,
+    [
+      "trade",
+      Number(tradeID),
+      String(baseAsset),
+      side === "BUY" ? "IN" : "OUT",
+      Number(origQty),
+      avgPriceBase,
+      Number(time),
+    ],
+  );
+  console.log(baseAsset, avgPriceBase);
 }
 binanceDB.close();
