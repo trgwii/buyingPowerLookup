@@ -1,6 +1,11 @@
 import { fiatCurrency } from "./config.ts";
-import { autoRetry, binance } from "./api/binance.ts";
-import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import {
+  autoRetry,
+  binance,
+  fetchAssetPrice,
+  getAvgPrice,
+} from "./api/binance.ts";
+import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
 
 binanceDB.query(`
@@ -13,60 +18,20 @@ binanceDB.query(`
 `);
 
 const allTrades = binanceDB.query(
-  "SELECT tradeID, symbol, time, side, price FROM trade",
+  "SELECT tradeID, symbol, time, side FROM trade",
 );
 for (const tradeData of allTrades) {
-  const [tradeID, symbol, time, side, price] = tradeData;
+  const [tradeID, symbol, time, side] = tradeData;
   console.log(`iteration symbol: ${symbol}`);
-  const quoteAssetData = binanceDB.query(
-    "SELECT quoteAsset FROM pair WHERE symbol = ?",
+  const pairData = binanceDB.query(
+    "SELECT baseAsset, quoteAsset FROM pair WHERE symbol = ?",
     [String(symbol)],
   );
-  const quoteAsset = String(quoteAssetData[0]);
-  if (quoteAsset === fiatCurrency.toUpperCase()) {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO tradeFiatPrice (
-                tradeID,
-                fiatPrice
-            ) VALUES ( ?, ?)`,
-      [
-        Number(tradeID),
-        Number(price),
-      ],
-    );
-    continue;
-  }
-  const referenceSymbolData = binanceDB.query(
-    "SELECT symbol FROM pair WHERE symbol IN (?,?)",
-    [`${fiatCurrency}${quoteAsset}`, `${quoteAsset}${fiatCurrency}`],
-  );
-  const referenceSymbol = referenceSymbolData[0];
-  if (!referenceSymbol) continue;
-  console.log(`trying requesting data for ${referenceSymbol}`);
-  const klinesResponse = await autoRetry(
-    async () =>
-      await binance.klines(
-        String(referenceSymbol),
-        "1m",
-        { limit: 1, startTime: new Date(Number(time)).setSeconds(0, 0) },
-      ),
-  );
-  if (!klinesResponse) break;
-  if (klinesResponse === true) {
-    allTrades.unshift(tradeData);
-    console.log(`adding ${symbol} back to the list`);
-    continue;
-  }
-  const klinesData = klinesResponse.data;
-  const firstCandle = klinesData[0];
-  const candleOpenPrice = Number(firstCandle[1]);
-  const candleClosePrice = Number(firstCandle[4]);
-  const candleAvgPrice = (candleOpenPrice + candleClosePrice) / 2;
-  const referencePrice = String(referenceSymbol).endsWith(fiatCurrency)
-    ? candleAvgPrice
-    : String(side) === "BUY"
-    ? 1 / candleAvgPrice
-    : Number(price) / candleAvgPrice;
+  if (!pairData[0] || pairData[0].length !== 2) continue;
+  const assetData = pairData[0];
+  const asset = side === "SELL" ? String(assetData[1]) : String(assetData[0]);
+  const avgPrice = await fetchAssetPrice(String(asset), Number(time));
+  if (!avgPrice || typeof avgPrice !== "number") continue;
   binanceDB.query(
     `INSERT OR IGNORE INTO tradeFiatPrice (
         tradeID,
@@ -74,9 +39,9 @@ for (const tradeData of allTrades) {
     ) VALUES ( ?, ?)`,
     [
       Number(tradeID),
-      Number(referencePrice),
+      Number(avgPrice),
     ],
   );
-  console.log(quoteAsset, candleAvgPrice);
+  console.log(asset, avgPrice);
 }
 binanceDB.close();

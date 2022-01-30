@@ -38,11 +38,6 @@ for (const symbol of allSymbolsScrambled) {
   console.log(`trying requesting data for ${symbol}`);
   const allOrdersResponse = await autoRetry(() => binance.allOrders(symbol));
   if (!allOrdersResponse) break;
-  if (allOrdersResponse === true) {
-    allSymbolsScrambled.unshift(symbol);
-    console.log(`adding ${symbol} back to the list`);
-    continue;
-  }
   const allOrders = allOrdersResponse.data;
   const filledOrders = allOrders.filter((order: any) =>
     order.status === "FILLED"
