@@ -175,7 +175,7 @@ export const fetchAssetPrice = async (
         if (!(avgPrice && typeof avgPrice === "number")) {
           continue;
         }
-        return avgPrice * avgTransitoryPrice;
+        return avgTransitoryPrice / avgPrice;
       } else if (transitoryAsset === fiatPair.baseAsset) {
         console.log("requesting pair", `${transitoryAsset}${fiatCurrency}`);
         const avgInvertedPrice = await getAvgPrice(
