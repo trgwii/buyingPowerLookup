@@ -66,8 +66,8 @@ export const fetchAssetPrice = async (
   timestamp: number,
 ): Promise<number | boolean> => {
   if (asset === fiatCurrency) {
-    console.log(asset, " is fiat, exiting");
-    return false;
+    console.log(asset, " is fiat, returning 1");
+    return 1;
   }
   console.log();
   console.log();
