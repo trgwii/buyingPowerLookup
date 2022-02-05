@@ -16,17 +16,26 @@ binanceDB.query(`
     UNIQUE(type, refId, side)
   )
 `);
-const allConversions = binanceDB.query(
-  "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
+const filename = "AutoInvestHistory.csv";
+import { parseCsv } from "./deps.ts";
+const autoInvestSpreadSheet = await parseCsv(
+  await Deno.readTextFile(`db/${filename}`),
 );
-for (const conversionData of allConversions) {
-  const [conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime] =
-    conversionData;
-  console.log(`iteration pair: ${fromAsset}${toAsset}`);
-
+let row = 1;
+for (const autoInvestEntry of autoInvestSpreadSheet) {
+  const [date, c2, fromAmountAndAsset, toAmountAndAsset, c5, status] =
+    autoInvestEntry;
+  const createTime = Date.parse(date);
+  const fromAsset = fromAmountAndAsset.replace(/[\d .-]/g, "");
+  const fromAmount = fromAmountAndAsset.replace(/[^\d.-]/g, "");
+  const toAsset = toAmountAndAsset.replace(/[\d .-]/g, "");
+  const toAmount = toAmountAndAsset.replace(/[^\d.-]/g, "");
+  const refId = row;
+  const type = filename;
+  if (status !== "Success") continue;
   const avgPriceFromAsset = await fetchAssetPrice(
-    String(fromAsset),
-    Number(createTime),
+    fromAsset,
+    createTime,
   );
   if (avgPriceFromAsset && typeof avgPriceFromAsset === "number") {
     binanceDB.query(
@@ -48,20 +57,19 @@ for (const conversionData of allConversions) {
             ?
           )`,
       [
-        "conversion",
-        Number(conversionID),
-        String(fromAsset),
+        type,
+        refId,
+        fromAsset,
         "OUT",
-        Number(fromAmount),
-        Number(avgPriceFromAsset),
-        Number(createTime),
+        fromAmount,
+        avgPriceFromAsset,
+        createTime,
       ],
     );
-    console.log(fromAsset, avgPriceFromAsset);
   }
   const avgPriceToAsset = await fetchAssetPrice(
-    String(toAsset),
-    Number(createTime),
+    toAsset,
+    createTime,
   );
   if (avgPriceToAsset && typeof avgPriceToAsset === "number") {
     binanceDB.query(
@@ -83,16 +91,16 @@ for (const conversionData of allConversions) {
             ?
           )`,
       [
-        "conversion",
-        Number(conversionID),
-        String(toAsset),
+        type,
+        refId,
+        toAsset,
         "IN",
-        Number(toAmount),
+        toAmount,
         avgPriceToAsset,
-        Number(createTime),
+        createTime,
       ],
     );
-    console.log(toAsset, avgPriceToAsset);
   }
+  row++;
 }
 binanceDB.close();

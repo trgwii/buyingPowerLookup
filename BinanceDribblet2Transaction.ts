@@ -16,12 +16,12 @@ binanceDB.query(`
     UNIQUE(type, refId, side)
   )
 `);
-const allConversions = binanceDB.query(
-  "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
+const allDribblets = binanceDB.query(
+  "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'createTime' FROM dribblet",
 );
-for (const conversionData of allConversions) {
-  const [conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime] =
-    conversionData;
+for (const dribbletData of allDribblets) {
+  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, createTime] =
+    dribbletData;
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
 
   const avgPriceFromAsset = await fetchAssetPrice(
@@ -48,8 +48,8 @@ for (const conversionData of allConversions) {
             ?
           )`,
       [
-        "conversion",
-        Number(conversionID),
+        "dribblet",
+        Number(dribbletID),
         String(fromAsset),
         "OUT",
         Number(fromAmount),
@@ -83,8 +83,8 @@ for (const conversionData of allConversions) {
             ?
           )`,
       [
-        "conversion",
-        Number(conversionID),
+        "dribblet",
+        Number(dribbletID),
         String(toAsset),
         "IN",
         Number(toAmount),
