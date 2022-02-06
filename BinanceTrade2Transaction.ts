@@ -17,10 +17,14 @@ binanceDB.query(`
   )
 `);
 const allTrades = binanceDB.query(
-  "SELECT tradeID, symbol, origQty, cummulativeQuoteQty, time, side FROM trade",
+  "SELECT tradeID, symbol, origQty, cummulativeQuoteQty, time AS 'dateUTCplus2', side FROM trade",
 );
 for (const tradeData of allTrades) {
-  const [tradeID, symbol, origQty, cummulativeQuoteQty, time, side] = tradeData;
+  const [tradeID, symbol, origQty, cummulativeQuoteQty, dateUTCplus2, side] =
+    tradeData;
+  const dateUTC = new Date(Number(dateUTCplus2));
+  dateUTC.setHours(dateUTC.getHours() - 2);
+  const time = dateUTC.getTime();
   console.log(`iteration symbol: ${symbol}`);
   const pairData = binanceDB.query(
     "SELECT baseAsset, quoteAsset FROM pair WHERE symbol = ?",

@@ -16,15 +16,15 @@ binanceDB.query(`
     UNIQUE(type, refId, side)
   )
 `);
-const filename = "BuyHistory.csv";
+const filename = "SellHistory.csv";
 import { parseCsv } from "./deps.ts";
-const buyCryptoSpreadSheet = await parseCsv(
+const sellCryptoSpreadSheet = await parseCsv(
   await Deno.readTextFile(`db/${filename}`),
 );
 let row = 1;
-for (const buyCryptoEntry of buyCryptoSpreadSheet) {
-  const [dateUTCplus1, c2, c3, priceString, c5, amountAndAsset, c7, c8] =
-    buyCryptoEntry;
+for (const sellCryptoEntry of sellCryptoSpreadSheet) {
+  const [dateUTCplus1, c2, amountAndAsset, priceString, c5, c6, c7, c8] =
+    sellCryptoEntry;
   const dateUTC = new Date(dateUTCplus1);
   dateUTC.setHours(dateUTC.getHours() - 1);
   const amount = amountAndAsset.replace(/[^\d.-]/g, "");
@@ -53,7 +53,7 @@ for (const buyCryptoEntry of buyCryptoSpreadSheet) {
       filename,
       row,
       asset,
-      "IN",
+      "OUT",
       parseFloat(amount),
       price,
       dateUTC.getTime(),

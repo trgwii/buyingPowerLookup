@@ -20,7 +20,9 @@ const allDividends = binanceDB.query(
   "SELECT dividendID, asset, amount, divTime FROM dividend",
 );
 for (const dividendData of allDividends) {
-  const [dividendID, asset, amount, divTime] = dividendData;
+  const [dividendID, asset, amount, dateUTCplus2] = dividendData;
+  const dateUTC = new Date(Number(dateUTCplus2));
+  dateUTC.setHours(dateUTC.getHours() - 2);
   console.log(`iteration asset: ${asset}`);
   binanceDB.query(
     `INSERT OR IGNORE INTO \`transaction\` (
@@ -47,7 +49,7 @@ for (const dividendData of allDividends) {
       "IN",
       Number(amount),
       0,
-      Number(divTime),
+      Number(dateUTC),
     ],
   );
 }

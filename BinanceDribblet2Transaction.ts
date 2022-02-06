@@ -17,16 +17,19 @@ binanceDB.query(`
   )
 `);
 const allDribblets = binanceDB.query(
-  "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'createTime' FROM dribblet",
+  "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
 );
 for (const dribbletData of allDribblets) {
-  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, createTime] =
+  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, dateUTCplus2] =
     dribbletData;
+  const dateUTC = new Date(Number(dateUTCplus2));
+  dateUTC.setHours(dateUTC.getHours() - 2);
+  const createTime = dateUTC.getTime();
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
 
   const avgPriceFromAsset = await fetchAssetPrice(
     String(fromAsset),
-    Number(createTime),
+    createTime,
   );
   if (avgPriceFromAsset && typeof avgPriceFromAsset === "number") {
     binanceDB.query(
@@ -54,14 +57,14 @@ for (const dribbletData of allDribblets) {
         "OUT",
         Number(fromAmount),
         Number(avgPriceFromAsset),
-        Number(createTime),
+        createTime,
       ],
     );
     console.log(fromAsset, avgPriceFromAsset);
   }
   const avgPriceToAsset = await fetchAssetPrice(
     String(toAsset),
-    Number(createTime),
+    createTime,
   );
   if (avgPriceToAsset && typeof avgPriceToAsset === "number") {
     binanceDB.query(
@@ -89,7 +92,7 @@ for (const dribbletData of allDribblets) {
         "IN",
         Number(toAmount),
         avgPriceToAsset,
-        Number(createTime),
+        createTime,
       ],
     );
     console.log(toAsset, avgPriceToAsset);
