@@ -186,7 +186,7 @@ export const fetchAssetPrice = async (
         if (!(avgInvertedPrice && typeof avgInvertedPrice === "number")) {
           continue;
         }
-        return avgInvertedPrice / avgTransitoryPrice;
+        return avgInvertedPrice * avgTransitoryPrice;
       }
     }
   }
