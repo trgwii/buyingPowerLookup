@@ -26,7 +26,7 @@ for (const buyCryptoEntry of buyCryptoSpreadSheet) {
   const [dateUTCplus1, c2, c3, priceString, c5, amountAndAsset, c7, c8] =
     buyCryptoEntry;
   const dateUTC = new Date(dateUTCplus1);
-  dateUTC.setHours(dateUTC.getHours() - 1);
+  dateUTC.setHours(dateUTC.getHours() + 1);
   const amount = amountAndAsset.replace(/[^\d.-]/g, "");
   const asset = amountAndAsset.replace(/[\d .-]/g, "");
   if (!amount.length || !priceString.length) continue;
