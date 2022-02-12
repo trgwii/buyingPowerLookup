@@ -17,10 +17,10 @@ binanceDB.query(`
   )
 `);
 const allTrades = binanceDB.query(
-  "SELECT tradeID, symbol, origQty, cummulativeQuoteQty, time AS 'dateUTCplus2', side FROM trade",
+  "SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'dateUTCplus2', side FROM trade",
 );
 for (const tradeData of allTrades) {
-  const [tradeID, symbol, origQty, cummulativeQuoteQty, dateUTC, side] =
+  const [tradeID, symbol, executedQty, cummulativeQuoteQty, date, side] =
     tradeData;
   const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime();
@@ -69,7 +69,7 @@ for (const tradeData of allTrades) {
     console.log(quoteAsset, avgPriceQuote);
   }
   const avgPriceBase = Number(cummulativeQuoteQty) * Number(avgPriceQuote) /
-    Number(origQty);
+    Number(executedQty);
   binanceDB.query(
     `INSERT OR IGNORE INTO \`transaction\` (
           type,
@@ -93,7 +93,7 @@ for (const tradeData of allTrades) {
       Number(tradeID),
       String(baseAsset),
       side === "BUY" ? "IN" : "OUT",
-      Number(origQty),
+      Number(executedQty),
       avgPriceBase,
       createTime,
     ],

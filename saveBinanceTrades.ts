@@ -40,7 +40,7 @@ for (const symbol of allSymbolsScrambled) {
   if (!allOrdersResponse) break;
   const allOrders = allOrdersResponse.data;
   const filledOrders = allOrders.filter((order: any) =>
-    order.status === "FILLED"
+    Number(order.executedQty) > 0 && Number(order.cummulativeQuoteQty) > 0
   );
   if (!filledOrders.length) continue;
   for (const filledOrder of filledOrders) {
