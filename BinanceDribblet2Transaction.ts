@@ -20,10 +20,9 @@ const allDribblets = binanceDB.query(
   "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
 );
 for (const dribbletData of allDribblets) {
-  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, dateUTCplus2] =
+  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, date] =
     dribbletData;
-  const dateUTC = new Date(Number(dateUTCplus2));
-  dateUTC.setHours(dateUTC.getHours() - 2);
+  const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime();
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
 

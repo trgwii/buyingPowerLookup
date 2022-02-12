@@ -22,7 +22,8 @@ const allTrades = binanceDB.query(
 for (const tradeData of allTrades) {
   const [tradeID, symbol, origQty, cummulativeQuoteQty, dateUTC, side] =
     tradeData;
-  const time = new Date(Number(dateUTC));
+  const dateUTC = new Date(Number(date));
+  const createTime = dateUTC.getTime();
   console.log(`iteration symbol: ${symbol}`);
   const pairData = binanceDB.query(
     "SELECT baseAsset, quoteAsset FROM pair WHERE symbol = ?",
@@ -32,7 +33,10 @@ for (const tradeData of allTrades) {
   const assetData = pairData[0];
   if (!Array.isArray(assetData) || assetData.length !== 2) continue;
   const [baseAsset, quoteAsset] = assetData;
-  const avgPriceQuote = await fetchAssetPrice(String(quoteAsset), Number(time));
+  const avgPriceQuote = await fetchAssetPrice(
+    String(quoteAsset),
+    createTime,
+  );
   if (avgPriceQuote && typeof avgPriceQuote === "number") {
     binanceDB.query(
       `INSERT OR IGNORE INTO \`transaction\` (
@@ -59,7 +63,7 @@ for (const tradeData of allTrades) {
         side === "SELL" ? "IN" : "OUT",
         Number(cummulativeQuoteQty),
         Number(avgPriceQuote),
-        Number(time),
+        createTime,
       ],
     );
     console.log(quoteAsset, avgPriceQuote);
@@ -91,7 +95,7 @@ for (const tradeData of allTrades) {
       side === "BUY" ? "IN" : "OUT",
       Number(origQty),
       avgPriceBase,
-      Number(time),
+      createTime,
     ],
   );
   console.log(baseAsset, avgPriceBase);

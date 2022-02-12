@@ -25,7 +25,9 @@ let row = 1;
 for (const autoInvestEntry of autoInvestSpreadSheet) {
   const [date, c2, fromAmountAndAsset, toAmountAndAsset, c5, status] =
     autoInvestEntry;
-  const createTime = Date.parse(date);
+  const dateUTC = new Date(date);
+  dateUTC.setHours(dateUTC.getHours() + 1);
+  const createTime = dateUTC.getTime();
   const fromAsset = fromAmountAndAsset.replace(/[\d .-]/g, "");
   const fromAmount = fromAmountAndAsset.replace(/[^\d.-]/g, "");
   const toAsset = toAmountAndAsset.replace(/[\d .-]/g, "");
@@ -63,7 +65,7 @@ for (const autoInvestEntry of autoInvestSpreadSheet) {
         "OUT",
         fromAmount,
         avgPriceFromAsset,
-        createTime,
+        dateUTC,
       ],
     );
   }
@@ -97,7 +99,7 @@ for (const autoInvestEntry of autoInvestSpreadSheet) {
         "IN",
         toAmount,
         avgPriceToAsset,
-        createTime,
+        dateUTC,
       ],
     );
   }

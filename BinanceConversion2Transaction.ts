@@ -20,9 +20,11 @@ const allConversions = binanceDB.query(
   "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
 );
 for (const conversionData of allConversions) {
-  const [conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime] =
+  const [conversionID, fromAsset, toAsset, fromAmount, toAmount, date] =
     conversionData;
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
+  const dateUTC = new Date(Number(date));
+  const createTime = dateUTC.getTime();
 
   const avgPriceFromAsset = await fetchAssetPrice(
     String(fromAsset),
