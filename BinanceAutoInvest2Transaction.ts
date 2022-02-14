@@ -65,7 +65,7 @@ for (const autoInvestEntry of autoInvestSpreadSheet) {
         "OUT",
         fromAmount,
         avgPriceFromAsset,
-        dateUTC,
+        createTime,
       ],
     );
   }
@@ -99,7 +99,7 @@ for (const autoInvestEntry of autoInvestSpreadSheet) {
         "IN",
         toAmount,
         avgPriceToAsset,
-        dateUTC,
+        createTime,
       ],
     );
   }
