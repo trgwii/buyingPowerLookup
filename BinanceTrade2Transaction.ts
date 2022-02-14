@@ -17,7 +17,7 @@ binanceDB.query(`
   )
 `);
 const allTrades = binanceDB.query(
-  "SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'dateUTCplus2', side FROM trade",
+  "SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'date', side FROM trade",
 );
 for (const tradeData of allTrades) {
   const [tradeID, symbol, executedQty, cummulativeQuoteQty, date, side] =
