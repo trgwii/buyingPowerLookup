@@ -1,7 +1,15 @@
 import { z } from "../deps.ts";
 import { balance } from "./validators.ts";
 export type balanceType = z.infer<typeof balance>;
-
+export type transaction = {
+  type: string;
+  refId: number;
+  asset: string;
+  side: string;
+  amount: number;
+  price: number;
+  timestamp: number;
+};
 export type coingeckoInfo = {
   id: string;
   symbol: string;
