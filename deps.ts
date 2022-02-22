@@ -9,7 +9,10 @@ export {
 } from "https://esm.sh/fifo-capital-gains-js";
 export type { Operation } from "https://esm.sh/fifo-capital-gains-js";
 export { Spot } from "https://esm.sh/@binance/connector";
+
 import {
   parse as parseCsv,
 } from "https://deno.land/std@0.82.0/encoding/csv.ts";
-export { parseCsv };
+
+import PQueue from "https://deno.land/x/p_queue@1.0.1/mod.ts";
+export { parseCsv, PQueue };
