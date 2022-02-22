@@ -1,3 +1,4 @@
+const scriptTimeStart = performance.now();
 import { fetchAssetPrice } from "./api/binance.ts";
 import { DB } from "./deps.ts";
 
@@ -101,3 +102,5 @@ for (const tradeData of allTrades) {
   console.log(baseAsset, avgPriceBase);
 }
 binanceDB.close();
+const scriptTimeEnd = performance.now();
+console.log(`${(scriptTimeEnd - scriptTimeStart) / 1000} seconds`);
