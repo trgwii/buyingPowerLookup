@@ -167,7 +167,7 @@ const randomUUID = () => crypto.randomUUID();
 import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 export function createHmac(algorithm: string, key: string) {
-  let buf: string[] = [];
+  const buf: string[] = [];
   const Hmac = {
     update: (data: string) => {
       buf.push(data);

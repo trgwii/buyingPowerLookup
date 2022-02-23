@@ -2,7 +2,7 @@ export default console;
 
 export class Console {
 }
-(console as any).Console = Console;
+(console as unknown as { Console: Console }).Console = Console;
 
 export const {
   assert,

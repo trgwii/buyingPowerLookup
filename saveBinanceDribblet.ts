@@ -31,7 +31,7 @@ for (let m = 1; m <= 12; m++) {
   if (!dustLogData) continue;
   const dustLogs = dustLogData.userAssetDribblets;
   if (!dustLogs.length) continue;
-  const dustLog = dustLogs.map((dustEntry: any) =>
+  const dustLog = dustLogs.map((dustEntry) =>
     dustEntry.userAssetDribbletDetails
   );
   if (!dustLog.length) continue;

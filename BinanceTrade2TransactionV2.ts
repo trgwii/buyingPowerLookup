@@ -16,7 +16,7 @@ const queue = new PQueue({
 const trades = binanceDB.query(
   `SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'date', side FROM trade`,
 );
-const transactionBundle = trades.map((trade: array) => {
+const transactionBundle = trades.map((trade) => {
   const [tradeID, symbol, executedQty, cummulativeQuoteQty, date, side] = trade;
   const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime();

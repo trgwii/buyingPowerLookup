@@ -27,9 +27,9 @@ binanceDB.query(`
     UNIQUE(orderId)
   )
 `);
-const pairs = binanceDB.query("SELECT symbol FROM pair");
+const pairs = binanceDB.query<[string]>("SELECT symbol FROM pair");
 const allSymbols = pairs.map(
-  (pair: any) => pair[0],
+  (pair) => pair[0],
 );
 console.log(allSymbols);
 const allSymbolsScrambled = scrambleArray(allSymbols);
@@ -39,7 +39,7 @@ for (const symbol of allSymbolsScrambled) {
   const allOrdersResponse = await autoRetry(() => binance.allOrders(symbol));
   if (!allOrdersResponse) break;
   const allOrders = allOrdersResponse.data;
-  const filledOrders = allOrders.filter((order: any) =>
+  const filledOrders = allOrders.filter((order) =>
     Number(order.executedQty) > 0 && Number(order.cummulativeQuoteQty) > 0
   );
   if (!filledOrders.length) continue;

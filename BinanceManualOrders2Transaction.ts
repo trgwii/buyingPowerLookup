@@ -22,7 +22,7 @@ const transactionBundle = (
       refId: row,
       asset: fromAsset,
       side: "OUT",
-      amount: fromAmountAndAsset.replace(/[^\d.-]/g, ""),
+      amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
       price: fetchAssetPrice(
         fromAsset,
         createTime,
@@ -34,7 +34,7 @@ const transactionBundle = (
       refId: row,
       asset: toAsset,
       side: "IN",
-      amount: toAmountAndAsset.replace(/[^\d.-]/g, ""),
+      amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
       price: fetchAssetPrice(
         toAsset,
         createTime,

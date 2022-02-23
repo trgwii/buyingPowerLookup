@@ -29,7 +29,7 @@ if (capitalWithdrawResponse.status !== 200) {
 }
 const capitalWithdraws = capitalWithdrawResponse.data;
 const successfulCapitalWithdraws = capitalWithdraws.filter(
-  (capitalWithdraws: any) => capitalWithdraws.status === 6,
+  (capitalWithdraws) => capitalWithdraws.status === 6,
 );
 if (!successfulCapitalWithdraws.length) Deno.exit(1);
 for (const successfulCapitalWithdraw of successfulCapitalWithdraws) {

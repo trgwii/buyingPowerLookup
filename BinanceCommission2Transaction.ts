@@ -19,16 +19,7 @@ const allCommissions = binanceDB.query(
   "SELECT commissionID, symbol AS 's', qty AS 'q1', quoteQty AS 'q2', `time` as 'date', isBuyer AS 'i', commission, commissionAsset FROM commission",
 );
 for (const tradeData of allCommissions) {
-  const [
-    commissionID,
-    s,
-    q1,
-    q2,
-    date,
-    i,
-    commission,
-    commissionAsset,
-  ] = tradeData;
+  const [commissionID, , , , date, , commission, commissionAsset] = tradeData;
   const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime() + 1;
   binanceDB.query(

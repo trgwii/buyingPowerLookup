@@ -4,7 +4,7 @@ import { binanceAPIaccess } from "./credentials.ts";
 import type { transaction } from "./types.ts";
 const { apiKey, secretKey } = binanceAPIaccess;
 export const binance = new Spot(apiKey, secretKey);
-export const autoRetry = async (f: CallableFunction) => {
+export const autoRetry = async <T>(f: () => Promise<T>): Promise<T | false> => {
   try {
     return await f();
   } catch (e) {
