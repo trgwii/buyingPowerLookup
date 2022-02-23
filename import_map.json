@@ -1,7 +1,7 @@
 {
   "imports": {
-    "https://deno.land/std@0.125.0/node/console.ts": "./binance_console_polyfill.ts",
-    "https://deno.land/std@0.125.0/node/crypto.ts": "./binance_crypto_polyfill.ts",
-    "https://cdn.esm.sh/v61/axios@0.21.4/deno/axios.js": "https://deno.land/x/axiod/mod.ts"
+    "https://deno.land/std@0.125.0/node/console.ts": "./polyfills/binance_console.ts",
+    "https://deno.land/std@0.125.0/node/crypto.ts": "./polyfills/binance_crypto.ts",
+    "https://cdn.esm.sh/v66/axios@0.21.4/deno/axios.development.js": "./polyfills/axios.ts"
   }
 }

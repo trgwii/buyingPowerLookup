@@ -6,9 +6,9 @@ export { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 export {
   aggregateByYear,
   calculateFIFOCapitalGains,
-} from "https://esm.sh/fifo-capital-gains-js@0.1.1";
-export type { Operation } from "https://esm.sh/fifo-capital-gains-js@0.1.1";
-import { Spot as _Spot } from "https://esm.sh/@binance/connector@1.7.0";
+} from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
+export type { Operation } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
+import { Spot as _Spot } from "https://esm.sh/@binance/connector@1.7.0?dev";
 import type { SpotClass } from "./Spot.d.ts";
 export const Spot: typeof SpotClass = _Spot;
 
