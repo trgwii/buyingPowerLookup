@@ -23,9 +23,9 @@ binanceDB.query(`
     UNIQUE(orderId)
   )
 `);
-const pairs = binanceDB.query("SELECT symbol FROM pair");
+const pairs = binanceDB.query<[string]>("SELECT symbol FROM pair");
 const allSymbols = pairs.map(
-  (pair: any) => pair[0],
+  (pair) => pair[0],
 );
 console.log(allSymbols);
 const allSymbolsScrambled = scrambleArray(allSymbols);

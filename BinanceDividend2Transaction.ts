@@ -1,4 +1,3 @@
-import { fetchAssetPrice } from "./api/binance.ts";
 import { DB } from "./deps.ts";
 
 const binanceDB = new DB("db/binance.db");

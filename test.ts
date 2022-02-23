@@ -3,7 +3,9 @@ import type { Operation } from "./deps.ts";
 
 const binanceDB = new DB("db/binance.db");
 
-const allTrades = binanceDB.query(
+const allTrades = binanceDB.query<
+  [number, string, number, string, "BUY" | "SELL"]
+>(
   `SELECT
     CASE WHEN side = 'BUY'
     THEN cummulativeQuoteQty
@@ -27,7 +29,7 @@ const allTrades = binanceDB.query(
     WHERE datetime LIKE '2021%'`,
 );
 const operationHistory = allTrades.map(
-  (operation: any): Operation => ({
+  (operation): Operation => ({
     amount: operation[0],
     date: new Date(operation[1]),
     price: operation[2],

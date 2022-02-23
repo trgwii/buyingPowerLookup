@@ -25,7 +25,7 @@ if (fiatDepositResponse.status !== 200) {
 const fiatDepositData = fiatDepositResponse.data;
 const fiatDeposits = fiatDepositData.data;
 const successfulFiatDeposits = fiatDeposits.filter(
-  (fiatDeposit: any) => fiatDeposit.status === "Successful",
+  (fiatDeposit) => fiatDeposit.status === "Successful",
 );
 if (!successfulFiatDeposits.length) Deno.exit(1);
 for (const successfulFiatDeposit of successfulFiatDeposits) {

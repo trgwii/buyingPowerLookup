@@ -5,11 +5,11 @@ const b2t = Binance2Transaction(new DB("db/binance.db"));
 b2t.init();
 const filename = "BuyHistory.csv";
 const transactionBundle = (
-  await parseCsv(
+  (await parseCsv(
     await Deno.readTextFile(`db/${filename}`),
-  )
-).map((data: array, row: nunber) => {
-  const [date, c2, c3, priceString, c5, amountAndAsset, c7, c8] = data;
+  )) as [string, string, string, string, string, string, string, string][]
+).map((data, row) => {
+  const [date, , , priceString, , amountAndAsset] = data;
   const dateUTC = new Date(date);
   dateUTC.setHours(dateUTC.getHours() + 1);
   const createTime = dateUTC.getTime();

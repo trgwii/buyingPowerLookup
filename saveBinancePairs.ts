@@ -1,4 +1,4 @@
-import { autoRetry, binance } from "./api/binance.ts";
+import { binance } from "./api/binance.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 const binanceDB = new DB("db/binance.db");
 
