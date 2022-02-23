@@ -14,7 +14,7 @@ export const Spot: typeof SpotClass = _Spot;
 
 import {
   parse as parseCsv,
-} from "https://deno.land/std@0.82.0/encoding/csv.ts";
+} from "https://deno.land/std@0.126.0/encoding/csv.ts";
 
 import PQueue from "https://deno.land/x/p_queue@1.0.1/mod.ts";
 export { parseCsv, PQueue };

@@ -1,29 +1,29 @@
 // Copyright 2018-2021 the Deno authors. All rights reserved. MIT license.
 // Copyright Joyent, Inc. and Node.js contributors. All rights reserved. MIT license.
-import { default as randomBytes } from "https://deno.land/std@0.119.0/node/_crypto/randomBytes.ts";
+import { default as randomBytes } from "https://deno.land/std@0.126.0/node/_crypto/randomBytes.ts";
 import randomFill, {
   randomFillSync,
-} from "https://deno.land/std@0.119.0/node/_crypto/randomFill.ts";
-import randomInt from "https://deno.land/std@0.119.0/node/_crypto/randomInt.ts";
+} from "https://deno.land/std@0.126.0/node/_crypto/randomFill.ts";
+import randomInt from "https://deno.land/std@0.126.0/node/_crypto/randomInt.ts";
 import {
   crypto as wasmCrypto,
   DigestAlgorithm,
   digestAlgorithms,
-} from "https://deno.land/std@0.119.0/_wasm_crypto/mod.ts";
+} from "https://deno.land/std@0.126.0/_wasm_crypto/mod.ts";
 import {
   pbkdf2,
   pbkdf2Sync,
-} from "https://deno.land/std@0.119.0/node/_crypto/pbkdf2.ts";
-import { Buffer } from "https://deno.land/std@0.119.0/node/buffer.ts";
-import { Transform } from "https://deno.land/std@0.119.0/node/stream.ts";
-import { encode as encodeToHex } from "https://deno.land/std@0.119.0/encoding/hex.ts";
-import { encode as encodeToBase64 } from "https://deno.land/std@0.119.0/encoding/base64.ts";
+} from "https://deno.land/std@0.126.0/node/_crypto/pbkdf2.ts";
+import { Buffer } from "https://deno.land/std@0.126.0/node/buffer.ts";
+import { Transform } from "https://deno.land/std@0.126.0/node/stream.ts";
+import { encode as encodeToHex } from "https://deno.land/std@0.126.0/encoding/hex.ts";
+import { encode as encodeToBase64 } from "https://deno.land/std@0.126.0/encoding/base64.ts";
 import {
   scrypt,
   scryptSync,
-} from "https://deno.land/std@0.119.0/node/_crypto/scrypt.ts";
-import { timingSafeEqual } from "https://deno.land/std@0.119.0/node/_crypto/timingSafeEqual.ts";
-import type { TransformOptions } from "https://deno.land/std@0.119.0/node/_stream.d.ts";
+} from "https://deno.land/std@0.126.0/node/_crypto/scrypt.ts";
+import { timingSafeEqual } from "https://deno.land/std@0.126.0/node/_crypto/timingSafeEqual.ts";
+import type { TransformOptions } from "https://deno.land/std@0.126.0/node/_stream.d.ts";
 
 const coerceToBytes = (data: string | BufferSource) => {
   if (data instanceof Uint8Array) return data;
