@@ -1,9 +1,8 @@
-import { Binance2Transaction } from "./api/binance.ts";
+import { BinanceTransaction } from "./api/binance.ts";
 import { DB, parseCsv } from "./deps.ts";
 
-const b2t = Binance2Transaction(new DB("db/binance.db"));
-b2t.init();
 const filename = "BuyHistory.csv";
+
 const transactionBundle = (
   (await parseCsv(
     await Deno.readTextFile(`db/${filename}`),
@@ -29,10 +28,13 @@ const transactionBundle = (
     },
   ];
 });
+const binanceDB = new DB("db/binance.db");
+const binanceTransaction = BinanceTransaction(binanceDB);
+binanceTransaction.init();
 for (const transactions of transactionBundle) {
   if (!transactions) continue;
   for (const transaction of transactions) {
-    b2t.add(transaction);
+    binanceTransaction.add(transaction);
   }
 }
-b2t.close();
+binanceDB.close();

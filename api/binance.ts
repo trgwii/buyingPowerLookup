@@ -1,3 +1,4 @@
+import type { Row } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 import { fiatCurrency } from "../config.ts";
 import { DB, sleep, Spot } from "../deps.ts";
 import { binanceAPIaccess } from "./credentials.ts";
@@ -11,7 +12,7 @@ export const autoRetry = async <T>(f: () => Promise<T>): Promise<T | false> => {
     console.log(e);
     const timeout = Number(e.response.headers.get("retry-after"));
     if (timeout <= 0) {
-      console.error(e.response.data.msg);
+      console.error(e);
       return false;
     }
     console.log(`waiting ${timeout} seconds`);
@@ -65,6 +66,7 @@ export const getAvgPrice = async (
 export const fetchAssetPrice = async (
   asset: string,
   timestamp: number,
+  pairs: Row[],
 ): Promise<number | boolean> => {
   if (asset === fiatCurrency) {
     console.log(asset, " is fiat, returning 1");
@@ -73,10 +75,8 @@ export const fetchAssetPrice = async (
   console.log();
   console.log();
   console.log("fetching price for: ", asset);
-  const binanceDB = new DB("db/binance.db");
-  const fiatPairsData = binanceDB.query(
-    "SELECT baseAsset, quoteAsset FROM pair WHERE baseAsset = ? OR quoteAsset = ?",
-    [fiatCurrency, fiatCurrency],
+  const fiatPairsData = pairs.filter((pair: Row) =>
+    pair[0] === fiatCurrency || pair[1] === fiatCurrency
   );
   const fiatPairs = fiatPairsData.map((fiatPair) => ({
     baseAsset: String(fiatPair[0]),
@@ -107,17 +107,13 @@ export const fetchAssetPrice = async (
   }
   console.log("iterating asset over fiat pairs");
   for (const fiatPair of fiatPairs) {
-    const transitoryPairsData = binanceDB.query(
-      `SELECT baseAsset, quoteAsset
-      FROM pair
-      WHERE (baseAsset = ? AND quoteAsset = ?)
-      OR (baseAsset = ? AND quoteAsset = ?)`,
-      [
-        asset,
-        fiatPair.quoteAsset,
-        fiatPair.baseAsset,
-        asset,
-      ],
+    const transitoryPairsData = pairs.filter((pair: Row) =>
+      (
+        pair[0] === asset && pair[1] === fiatPair.quoteAsset
+      ) ||
+      (
+        pair[0] === fiatPair.quoteAsset && pair[1] === asset
+      )
     );
     if (!transitoryPairsData || !transitoryPairsData.length) continue;
     const [baseTransitoryAsset, quoteTransitoryAsset] = transitoryPairsData[0]
@@ -195,9 +191,80 @@ export const fetchAssetPrice = async (
   return false;
 };
 
-export const Binance2Transaction = (binanceDB: DB) => ({
+export const BinanceTrade = (db: DB) => ({
   init: () =>
-    binanceDB.query(`
+    db.query(`
+  CREATE TABLE IF NOT EXISTS trade (
+    tradeID INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol                CHARACTER(20),
+    orderId               INTEGER,
+    orderListId           INTEGER,
+    clientOrderId         VARCHAR(50),
+    price                 FLOAT,
+    origQty               FLOAT,
+    executedQty           FLOAT,
+    cummulativeQuoteQty   FLOAT,
+    status                CHARACTER(20),
+    timeInForce           CHARACTER(20),
+    type                  CHARACTER(20),
+    side                  CHARACTER(20),
+    stopPrice             FLOAT,
+    icebergQty            FLOAT,
+    time                  INTEGER,
+    updateTime            INTEGER,
+    isWorking             BOOLEAN,
+    origQuoteOrderQty     FLOAT,
+    UNIQUE(orderId)
+  )
+`),
+  add: (trade: any) =>
+    db.query(
+      `INSERT OR IGNORE INTO trade (
+      symbol,
+      orderId,
+      orderListId,
+      clientOrderId,
+      price,
+      origQty,
+      executedQty,
+      cummulativeQuoteQty,
+      status,
+      timeInForce,
+      type,
+      side,
+      stopPrice,
+      icebergQty,
+      time,
+      updateTime,
+      isWorking,
+      origQuoteOrderQty
+    ) VALUES (
+      :symbol,
+      :orderId,
+      :orderListId,
+      :clientOrderId,
+      :price,
+      :origQty,
+      :executedQty,
+      :cummulativeQuoteQty,
+      :status,
+      :timeInForce,
+      :type,
+      :side,
+      :stopPrice,
+      :icebergQty,
+      :time,
+      :updateTime,
+      :isWorking,
+      :origQuoteOrderQty
+    )`,
+      trade,
+    ),
+});
+
+export const BinanceTransaction = (db: DB) => ({
+  init: () =>
+    db.query(`
       CREATE TABLE IF NOT EXISTS \`transaction\` (
         transactionID INTEGER PRIMARY KEY AUTOINCREMENT,
         type                  CHARACTER(20),
@@ -211,7 +278,7 @@ export const Binance2Transaction = (binanceDB: DB) => ({
       )
     `),
   add: (transaction: transaction) =>
-    binanceDB.query(
+    db.query(
       `INSERT OR IGNORE INTO \`transaction\` (
         type, refId, asset, side, amount, price, timestamp
       ) VALUES (
@@ -219,5 +286,4 @@ export const Binance2Transaction = (binanceDB: DB) => ({
       )`,
       transaction,
     ),
-  close: () => binanceDB.close(),
 });

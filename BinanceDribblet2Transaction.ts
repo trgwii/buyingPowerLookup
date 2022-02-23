@@ -1,100 +1,66 @@
-import { fetchAssetPrice } from "./api/binance.ts";
-import { DB } from "./deps.ts";
+import { BinanceTransaction, fetchAssetPrice } from "./api/binance.ts";
+import { apiConcurrency } from "./config.ts";
+import { DB, PQueue } from "./deps.ts";
+
+const type = "dribblet";
+const queue = new PQueue({
+  concurrency: apiConcurrency,
+});
 
 const binanceDB = new DB("db/binance.db");
-
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS \`transaction\` (
-    transactionID INTEGER PRIMARY KEY AUTOINCREMENT,
-    type                  CHARACTER(20),
-    refId                 INTEGER,
-    asset                 CHARACTER(20),
-    side                  BOOLEAN,
-    amount                FLOAT,
-    price                 FLOAT,
-    timestamp             INTEGER,
-    UNIQUE(type, refId, side)
-  )
-`);
-const allDribblets = binanceDB.query(
-  "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
+const pairs = binanceDB.query(
+  `SELECT baseAsset, quoteAsset, symbol
+  FROM pair`,
 );
-for (const dribbletData of allDribblets) {
-  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, date] =
-    dribbletData;
+const transactionBundle = binanceDB.query(
+  "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
+).map((dribblet) => {
+  const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, date] = dribblet;
   const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime();
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
-
-  const avgPriceFromAsset = await fetchAssetPrice(
-    String(fromAsset),
-    createTime,
-  );
-  if (avgPriceFromAsset && typeof avgPriceFromAsset === "number") {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO \`transaction\` (
-            type,
-            refId,
-            asset,
-            side,
-            amount,
-            price,
-            timestamp
-          ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
-          )`,
-      [
-        "dribblet",
-        Number(dribbletID),
-        String(fromAsset),
-        "OUT",
-        Number(fromAmount),
-        Number(avgPriceFromAsset),
-        createTime,
-      ],
-    );
-    console.log(fromAsset, avgPriceFromAsset);
+  return [
+    {
+      type: type,
+      refId: Number(dribbletID),
+      asset: String(toAsset),
+      side: "IN",
+      amount: Number(toAmount),
+      price: queue.add(() =>
+        fetchAssetPrice(
+          String(toAsset),
+          createTime,
+          pairs,
+        )
+      ),
+      timestamp: createTime,
+    },
+    {
+      type: type,
+      refId: Number(dribbletID),
+      asset: String(fromAsset),
+      side: "OUT",
+      amount: Number(fromAmount),
+      price: null,
+      timestamp: createTime,
+    },
+  ];
+});
+const binanceTransaction = BinanceTransaction(binanceDB);
+binanceTransaction.init();
+for (const transactions of transactionBundle) {
+  if (!transactions) continue;
+  const [quoteAssetTransaction, baseAssetTransaction] = transactions;
+  const quotePrice = await quoteAssetTransaction.price;
+  if (
+    !quotePrice || typeof quotePrice !== "number" ||
+    baseAssetTransaction.amount <= 0
+  ) {
+    continue;
   }
-  const avgPriceToAsset = await fetchAssetPrice(
-    String(toAsset),
-    createTime,
-  );
-  if (avgPriceToAsset && typeof avgPriceToAsset === "number") {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO \`transaction\` (
-            type,
-            refId,
-            asset,
-            side,
-            amount,
-            price,
-            timestamp
-          ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
-          )`,
-      [
-        "dribblet",
-        Number(dribbletID),
-        String(toAsset),
-        "IN",
-        Number(toAmount),
-        avgPriceToAsset,
-        createTime,
-      ],
-    );
-    console.log(toAsset, avgPriceToAsset);
-  }
+  const basePrice = quoteAssetTransaction.amount *
+    quotePrice / baseAssetTransaction.amount;
+  binanceTransaction.add({ ...quoteAssetTransaction, price: quotePrice });
+  binanceTransaction.add({ ...baseAssetTransaction, price: basePrice });
 }
 binanceDB.close();

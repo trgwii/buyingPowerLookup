@@ -3,6 +3,7 @@ export * as z from "https://deno.land/x/zod@v3.11.6/mod.ts";
 export { existsSync } from "https://deno.land/std@0.126.0/fs/mod.ts";
 export { sleep } from "https://deno.land/x/sleep@v1.2.1/mod.ts";
 export { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
+export type { Row } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 export {
   aggregateByYear,
   calculateFIFOCapitalGains,

@@ -1,9 +1,17 @@
-import { Binance2Transaction, fetchAssetPrice } from "./api/binance.ts";
-import { DB, parseCsv } from "./deps.ts";
+import { BinanceTransaction, fetchAssetPrice } from "./api/binance.ts";
+import { apiConcurrency } from "./config.ts";
+import { DB, parseCsv, PQueue } from "./deps.ts";
 
-const b2t = Binance2Transaction(new DB("db/binance.db"));
-b2t.init();
 const filename = "ManualOrders.csv";
+const queue = new PQueue({
+  concurrency: apiConcurrency,
+});
+
+const binanceDB = new DB("db/binance.db");
+const pairs = binanceDB.query(
+  `SELECT baseAsset, quoteAsset, symbol
+  FROM pair`,
+);
 const transactionBundle = (
   (await parseCsv(
     await Deno.readTextFile(`db/${filename}`),
@@ -23,9 +31,12 @@ const transactionBundle = (
       asset: fromAsset,
       side: "OUT",
       amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
-      price: fetchAssetPrice(
-        fromAsset,
-        createTime,
+      price: queue.add(() =>
+        fetchAssetPrice(
+          fromAsset,
+          createTime,
+          pairs,
+        )
       ),
       timestamp: createTime,
     },
@@ -35,20 +46,25 @@ const transactionBundle = (
       asset: toAsset,
       side: "IN",
       amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
-      price: fetchAssetPrice(
-        toAsset,
-        createTime,
+      price: queue.add(() =>
+        fetchAssetPrice(
+          toAsset,
+          createTime,
+          pairs,
+        )
       ),
       timestamp: createTime,
     },
   ];
 });
+const binanceTransaction = BinanceTransaction(binanceDB);
+binanceTransaction.init();
 for (const transactions of transactionBundle) {
   if (!transactions) continue;
   for (const transaction of transactions) {
     const price = await transaction.price;
     if (!price || typeof price !== "number") continue;
-    b2t.add({ ...transaction, price: price });
+    binanceTransaction.add({ ...transaction, price: price });
   }
 }
-b2t.close();
+binanceDB.close();

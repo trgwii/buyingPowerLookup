@@ -1,100 +1,69 @@
-import { fetchAssetPrice } from "./api/binance.ts";
-import { DB } from "./deps.ts";
+import { BinanceTransaction, fetchAssetPrice } from "./api/binance.ts";
+import { apiConcurrency } from "./config.ts";
+import { DB, PQueue } from "./deps.ts";
+
+const type = "conversion";
+const queue = new PQueue({
+  concurrency: apiConcurrency,
+});
 
 const binanceDB = new DB("db/binance.db");
-
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS \`transaction\` (
-    transactionID INTEGER PRIMARY KEY AUTOINCREMENT,
-    type                  CHARACTER(20),
-    refId                 INTEGER,
-    asset                 CHARACTER(20),
-    side                  BOOLEAN,
-    amount                FLOAT,
-    price                 FLOAT,
-    timestamp             INTEGER,
-    UNIQUE(type, refId, side)
-  )
-`);
-const allConversions = binanceDB.query(
-  "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
+const pairs = binanceDB.query(
+  `SELECT baseAsset, quoteAsset, symbol
+  FROM pair`,
 );
-for (const conversionData of allConversions) {
+
+const transactionBundle = binanceDB.query(
+  "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
+).map((conversion) => {
   const [conversionID, fromAsset, toAsset, fromAmount, toAmount, date] =
-    conversionData;
+    conversion;
   console.log(`iteration pair: ${fromAsset}${toAsset}`);
   const dateUTC = new Date(Number(date));
   const createTime = dateUTC.getTime();
+  return [
+    {
+      type: type,
+      refId: Number(conversionID),
+      asset: String(fromAsset),
+      side: "OUT",
+      amount: Number(fromAmount),
+      price: queue.add(() =>
+        fetchAssetPrice(
+          String(fromAsset),
+          createTime,
+          pairs,
+        )
+      ),
+      timestamp: createTime,
+    },
+    {
+      type: type,
+      refId: Number(conversionID),
+      asset: String(toAsset),
+      side: "IN",
+      amount: Number(toAmount),
+      price: queue.add(() =>
+        fetchAssetPrice(
+          String(toAsset),
+          createTime,
+          pairs,
+        )
+      ),
+      timestamp: createTime,
+    },
+  ];
+});
 
-  const avgPriceFromAsset = await fetchAssetPrice(
-    String(fromAsset),
-    Number(createTime),
-  );
-  if (avgPriceFromAsset && typeof avgPriceFromAsset === "number") {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO \`transaction\` (
-            type,
-            refId,
-            asset,
-            side,
-            amount,
-            price,
-            timestamp
-          ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
-          )`,
-      [
-        "conversion",
-        Number(conversionID),
-        String(fromAsset),
-        "OUT",
-        Number(fromAmount),
-        Number(avgPriceFromAsset),
-        Number(createTime),
-      ],
-    );
-    console.log(fromAsset, avgPriceFromAsset);
-  }
-  const avgPriceToAsset = await fetchAssetPrice(
-    String(toAsset),
-    Number(createTime),
-  );
-  if (avgPriceToAsset && typeof avgPriceToAsset === "number") {
-    binanceDB.query(
-      `INSERT OR IGNORE INTO \`transaction\` (
-            type,
-            refId,
-            asset,
-            side,
-            amount,
-            price,
-            timestamp
-          ) VALUES (
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?,
-            ?
-          )`,
-      [
-        "conversion",
-        Number(conversionID),
-        String(toAsset),
-        "IN",
-        Number(toAmount),
-        avgPriceToAsset,
-        Number(createTime),
-      ],
-    );
-    console.log(toAsset, avgPriceToAsset);
+const binanceTransaction = BinanceTransaction(binanceDB);
+binanceTransaction.init();
+
+for (const transactions of transactionBundle) {
+  if (!transactions) continue;
+  for (const transaction of transactions) {
+    const price = await transaction.price;
+    if (!price || typeof price !== "number") continue;
+    binanceTransaction.add({ ...transaction, price: price });
   }
 }
 binanceDB.close();
