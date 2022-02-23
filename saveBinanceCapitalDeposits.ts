@@ -1,5 +1,5 @@
 import { binance } from "./api/binance.ts";
-import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
 
 binanceDB.query(`

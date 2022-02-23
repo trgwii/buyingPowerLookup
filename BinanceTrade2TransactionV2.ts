@@ -1,8 +1,7 @@
 const scriptTimeStart = performance.now();
 
 import { Binance2Transaction, fetchAssetPrice } from "./api/binance.ts";
-import { DB } from "./deps.ts";
-import PQueue from "https://deno.land/x/p_queue@1.0.1/mod.ts";
+import { DB, PQueue } from "./deps.ts";
 
 const binanceDB = new DB("db/binance.db");
 
