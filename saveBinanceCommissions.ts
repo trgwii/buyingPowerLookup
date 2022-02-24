@@ -1,84 +1,40 @@
+import { BinanceCommission } from "./api/api2db.ts";
 import { autoRetry, binance } from "./api/binance.ts";
-import { DB } from "./deps.ts";
+import { apiConcurrency } from "./config.ts";
+import { DB, PQueue } from "./deps.ts";
 import { scrambleArray } from "./utils.ts";
+
+const queue = new PQueue({
+  concurrency: apiConcurrency / 10,
+});
+
 const binanceDB = new DB("db/binance.db");
 
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS commission (
-    commissionID INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol                CHARACTER(20),
-    id                    INTEGER,
-    orderId               INTEGER,
-    orderListId           INTEGER,
-    clientOrderId         VARCHAR(50),
-    price                 FLOAT,
-    qty                   FLOAT,
-    quoteQty              FLOAT,
-    commission            FLOAT,
-    commissionAsset       CHARACTER(20),
-    time                  INTEGER,
-    isBuyer               BOOLEAN,
-    isMaker               BOOLEAN,
-    isBestMatch           BOOLEAN,
-    UNIQUE(orderId)
-  )
-`);
+const binanceCommission = BinanceCommission(binanceDB);
+binanceCommission.init();
+
 const pairs = binanceDB.query<[string]>("SELECT symbol FROM pair");
-const allSymbols = pairs.map(
+const symbols = pairs.map(
   (pair) => pair[0],
 );
-console.log(allSymbols);
-const allSymbolsScrambled = scrambleArray(allSymbols);
 
-for (const symbol of allSymbolsScrambled) {
-  console.log(`trying requesting data for ${symbol}`);
-  const allCommissionsResponse = await autoRetry(() =>
-    binance.myTrades(symbol)
-  );
-  if (!allCommissionsResponse) break;
-  const allCommissions = allCommissionsResponse.data;
-  if (!allCommissions.length) continue;
-  for (const commission of allCommissions) {
+const allAssetCommissionsRequests = scrambleArray(symbols).map((symbol) =>
+  queue.add(() => autoRetry(() => binance.myTrades(symbol)))
+);
+
+for (const assetCommissionsRequests of allAssetCommissionsRequests) {
+  const assetCommissionsResponse = await assetCommissionsRequests;
+  if (!assetCommissionsResponse) break;
+  const assetCommissions = assetCommissionsResponse.data;
+  if (!assetCommissions.length) continue;
+  for (const assetCommission of assetCommissions) {
     if (
-      Number(commission.commission) <= 0
+      Number(assetCommission.commission) <= 0
     ) {
       continue;
     }
-    console.log(commission);
-    binanceDB.query(
-      `INSERT OR IGNORE INTO commission (
-        symbol,
-        id,
-        orderId,
-        orderListId,
-        clientOrderId,
-        price,
-        qty,
-        quoteQty,
-        commission,
-        commissionAsset,
-        time,
-        isBuyer,
-        isMaker,
-        isBestMatch
-    ) VALUES (
-      :symbol,
-      :id,
-      :orderId,
-      :orderListId,
-      :clientOrderId,
-      :price,
-      :qty,
-      :quoteQty,
-      :commission,
-      :commissionAsset,
-      :time,
-      :isBuyer,
-      :isMaker,
-      :isBestMatch
-    )`,
-      commission,
-    );
+    console.log(assetCommission);
+    binanceCommission.add(assetCommission);
   }
 }
 binanceDB.close();

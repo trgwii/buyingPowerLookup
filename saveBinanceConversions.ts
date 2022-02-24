@@ -1,24 +1,10 @@
 import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
 
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS conversion (
-    conversionID INTEGER PRIMARY KEY AUTOINCREMENT,
-    quoteId                   VARCHAR(50),
-    orderId                   INTEGER,
-    orderStatus               CHARACTER(20),
-    fromAsset                 CHARACTER(20),
-    fromAmount                FLOAT,
-    toAsset                   CHARACTER(20),
-    toAmount                  FLOAT,
-    ratio                     FLOAT,
-    inverseRatio              FLOAT,
-    createTime                INTEGER,
-    UNIQUE(orderId)
-  )
-`);
-
+const binanceConversion = BinanceConversion(binanceDB);
+binanceConversion.init();
 import { binance } from "./api/binance.ts";
+import { BinanceConversion } from "./api/api2db.ts";
 
 for (let m = 1; m <= 12; m++) {
   const mString = m.toString().length === 1 ? `0${m}` : m.toString();
@@ -40,32 +26,7 @@ for (let m = 1; m <= 12; m++) {
   for (const convertTrade of convertTradeHistory) {
     if (convertTrade.orderStatus !== "SUCCESS") continue;
     console.log(convertTrade);
-    binanceDB.query(
-      `INSERT OR IGNORE INTO conversion (
-        quoteId,
-        orderId,
-        orderStatus,
-        fromAsset,
-        fromAmount,
-        toAsset,
-        toAmount,
-        ratio,
-        inverseRatio,
-        createTime
-      ) VALUES (
-        :quoteId,
-        :orderId,
-        :orderStatus,
-        :fromAsset,
-        :fromAmount,
-        :toAsset,
-        :toAmount,
-        :ratio,
-        :inverseRatio,
-        :createTime
-      )`,
-      convertTrade,
-    );
+    binanceConversion.add(convertTrade);
   }
 }
 binanceDB.close();

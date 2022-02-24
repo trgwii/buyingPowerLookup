@@ -1,16 +1,9 @@
+import { BinancePair } from "./api/api2db.ts";
 import { binance } from "./api/binance.ts";
 import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
-
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS pair (
-    pairID INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol                CHARACTER(20),
-    baseAsset             CHARACTER(20),
-    quoteAsset            CHARACTER(20),
-    UNIQUE(symbol)
-  )
-`);
+const binancePair = BinancePair(binanceDB);
+binancePair.init();
 const exchangeInfoResponse = await binance.exchangeInfo();
 if (exchangeInfoResponse.status !== 200) {
   console.error(exchangeInfoResponse.statusText);
@@ -18,13 +11,6 @@ if (exchangeInfoResponse.status !== 200) {
 }
 const exchangeInfo = exchangeInfoResponse.data;
 for (const symbol of exchangeInfo.symbols) {
-  binanceDB.query(
-    `INSERT OR IGNORE INTO pair (
-        symbol,
-        baseAsset,
-        quoteAsset
-    ) VALUES ( ?, ?, ?)`,
-    [symbol.symbol, symbol.baseAsset, symbol.quoteAsset],
-  );
+  binancePair.add([symbol.symbol, symbol.baseAsset, symbol.quoteAsset]);
 }
 binanceDB.close();

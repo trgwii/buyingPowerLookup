@@ -1,4 +1,5 @@
-import { autoRetry, binance, BinanceTrade } from "./api/binance.ts";
+import { BinanceTrade } from "./api/api2db.ts";
+import { autoRetry, binance } from "./api/binance.ts";
 import { apiConcurrency } from "./config.ts";
 import { DB, PQueue } from "./deps.ts";
 import { scrambleArray } from "./utils.ts";

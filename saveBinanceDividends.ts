@@ -1,20 +1,10 @@
+import { BinanceDividend } from "./api/api2db.ts";
 import { binance } from "./api/binance.ts";
 import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
 
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS dividend (
-    dividendID INTEGER PRIMARY KEY AUTOINCREMENT,
-    id                     INTEGER,
-    tranId                 INTEGER,
-    asset                  CHARACTER(20),
-    amount                 FLOAT,
-    divTime                INTEGER,
-    enInfo                 VARCHAR(100),
-    UNIQUE(id)
-  )
-`);
-
+const binanceDividend = BinanceDividend(binanceDB);
+binanceDividend.init();
 for (let m = 1; m <= 12; m++) {
   const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
   for (
@@ -42,24 +32,7 @@ for (let m = 1; m <= 12; m++) {
     console.log(devidendRecords);
     for (const devidendRecord of devidendRecords) {
       console.log(devidendRecord);
-      binanceDB.query(
-        `INSERT OR IGNORE INTO dividend (
-          id,
-          tranId,
-          asset,
-          amount,
-          divTime,
-          enInfo
-        ) VALUES (
-          :id,
-          :tranId,
-          :asset,
-          :amount,
-          :divTime,
-          :enInfo
-        )`,
-        devidendRecord,
-      );
+      binanceDividend.add(devidendRecord);
     }
   }
 }

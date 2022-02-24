@@ -1,22 +1,10 @@
+import { BinanceDeposit } from "./api/api2db.ts";
 import { binance } from "./api/binance.ts";
 import { DB } from "./deps.ts";
 const binanceDB = new DB("db/binance.db");
 
-binanceDB.query(`
-  CREATE TABLE IF NOT EXISTS deposit (
-    depositID INTEGER PRIMARY KEY AUTOINCREMENT,
-    orderNo              VARCHAR(50),
-    fiatCurrency         CHARACTER(3),
-    indicatedAmount      FLOAT,
-    amount               FLOAT,
-    totalFee             FLOAT,
-    method               CHARACTER(20),
-    status               CHARACTER(20),
-    createTime           INTEGER,
-    updateTime           INTEGER,
-    UNIQUE(orderNo)
-  )
-`);
+const binanceDeposit = BinanceDeposit(binanceDB);
+binanceDeposit.init();
 const fiatDepositResponse = await binance.depositWithdrawalHistory(0);
 if (fiatDepositResponse.status !== 200) {
   console.log(fiatDepositResponse.statusText);
@@ -29,29 +17,6 @@ const successfulFiatDeposits = fiatDeposits.filter(
 );
 if (!successfulFiatDeposits.length) Deno.exit(1);
 for (const successfulFiatDeposit of successfulFiatDeposits) {
-  binanceDB.query(
-    `INSERT OR IGNORE INTO deposit (
-    orderNo,
-    fiatCurrency,
-    indicatedAmount,
-    amount,
-    totalFee,
-    method,
-    status,
-    createTime,
-    updateTime
-  ) VALUES (
-    :orderNo,
-    :fiatCurrency,
-    :indicatedAmount,
-    :amount,
-    :totalFee,
-    :method,
-    :status,
-    :createTime,
-    :updateTime
-  )`,
-    successfulFiatDeposit,
-  );
+  binanceDeposit.add(successfulFiatDeposit);
 }
 binanceDB.close();
