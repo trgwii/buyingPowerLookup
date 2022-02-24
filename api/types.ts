@@ -10,6 +10,12 @@ export type transaction = {
   price: number;
   timestamp: number;
 };
+export type transactionBundle = (
+  | (Omit<transaction, "price"> & {
+    price: Promise<number | boolean> | number;
+  })[]
+  | null
+)[];
 export type coingeckoInfo = {
   id: string;
   symbol: string;
