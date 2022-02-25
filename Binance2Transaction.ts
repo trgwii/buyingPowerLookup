@@ -1,5 +1,5 @@
 const scriptTimeStart = performance.now();
-import { BinanceTransaction } from "./api/api2db.ts";
+import { BinanceTransaction } from "./api/dbFunctions.ts";
 import {
   prepareAutoInvest,
   prepareBuyHistory,

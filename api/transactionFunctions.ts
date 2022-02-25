@@ -1,5 +1,5 @@
 import { DB, parseCsv, PQueue, Row } from "../deps.ts";
-import { BinanceTransaction } from "./api2db.ts";
+import { BinanceTransaction } from "./dbFunctions.ts";
 import { fetchAssetPrice } from "./priceFunctions.ts";
 import { transactionBundle } from "./types.ts";
 
