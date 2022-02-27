@@ -1,19 +1,21 @@
 import { fiatCurrency } from "../config.ts";
-import { Row } from "../deps.ts";
+import { PQueue, Row } from "../deps.ts";
 import { autoRetry, binance } from "./binance.ts";
 
 export const getAvgPrice = async (
   pair: string,
   timestamp: number,
+  queue: PQueue,
 ): Promise<number | boolean> => {
-  const candlesResponse = await autoRetry(
-    () =>
-      binance.klines(
-        pair,
-        "1m",
-        { limit: 1, startTime: new Date(timestamp).setSeconds(0, 0) },
-      ),
+  const binanceHandler = autoRetry(binance, "klines");
+  const candlesRequest = queue.add(() =>
+    binanceHandler(
+      pair,
+      "1m",
+      { limit: 1, startTime: new Date(timestamp).setSeconds(0, 0) },
+    )
   );
+  const candlesResponse = await candlesRequest;
   if (!(candlesResponse && "data" in candlesResponse)) return false;
   const candlesData = candlesResponse.data;
   if (!candlesData.length) {
@@ -30,6 +32,7 @@ export const fetchAssetPrice = async (
   asset: string,
   timestamp: number,
   pairs: Row[],
+  queue: PQueue,
 ): Promise<number | boolean> => {
   if (asset === fiatCurrency) {
     console.log(asset, " is fiat, returning 1");
@@ -52,6 +55,7 @@ export const fetchAssetPrice = async (
       const avgPrice = await getAvgPrice(
         `${asset}${fiatCurrency}`,
         timestamp,
+        queue,
       );
       if (!(avgPrice && typeof avgPrice === "number")) continue;
       console.log("result: ", avgPrice);
@@ -61,6 +65,7 @@ export const fetchAssetPrice = async (
       const avgInvertedPrice = await getAvgPrice(
         `${fiatCurrency}${asset}`,
         timestamp,
+        queue,
       );
       console.log("result: ", avgInvertedPrice);
       if (!(avgInvertedPrice && typeof avgInvertedPrice === "number")) continue;
@@ -89,6 +94,7 @@ export const fetchAssetPrice = async (
       avgTransitoryPrice = await getAvgPrice(
         `${asset}${quoteTransitoryAsset}`,
         timestamp,
+        queue,
       );
       if (!(avgTransitoryPrice && typeof avgTransitoryPrice === "number")) {
         continue;
@@ -99,6 +105,7 @@ export const fetchAssetPrice = async (
       const avgInvertedTransitoryPrice = await getAvgPrice(
         `${baseTransitoryAsset}${asset}`,
         timestamp,
+        queue,
       );
       if (
         !(avgInvertedTransitoryPrice &&
@@ -130,6 +137,7 @@ export const fetchAssetPrice = async (
         const avgPrice = await getAvgPrice(
           `${fiatCurrency}${transitoryAsset}`,
           timestamp,
+          queue,
         );
         console.log("result: ", avgPrice);
         if (!(avgPrice && typeof avgPrice === "number")) {
@@ -141,6 +149,7 @@ export const fetchAssetPrice = async (
         const avgInvertedPrice = await getAvgPrice(
           `${transitoryAsset}${fiatCurrency}`,
           timestamp,
+          queue,
         );
         console.log("result: ", avgInvertedPrice);
         if (!(avgInvertedPrice && typeof avgInvertedPrice === "number")) {

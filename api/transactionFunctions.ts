@@ -27,12 +27,11 @@ export const prepareAutoInvest = async (
         asset: fromAsset,
         side: "OUT",
         amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
-        price: queue.add(() =>
-          fetchAssetPrice(
-            fromAsset,
-            createTime,
-            pairs,
-          )
+        price: fetchAssetPrice(
+          fromAsset,
+          createTime,
+          pairs,
+          queue,
         ),
         timestamp: createTime,
       },
@@ -125,12 +124,11 @@ export const prepareConversion = (
         asset: String(fromAsset),
         side: "OUT",
         amount: Number(fromAmount),
-        price: queue.add(() =>
-          fetchAssetPrice(
-            String(fromAsset),
-            createTime,
-            pairs,
-          )
+        price: fetchAssetPrice(
+          String(fromAsset),
+          createTime,
+          pairs,
+          queue,
         ),
         timestamp: createTime,
       },
@@ -140,12 +138,11 @@ export const prepareConversion = (
         asset: String(toAsset),
         side: "IN",
         amount: Number(toAmount),
-        price: queue.add(() =>
-          fetchAssetPrice(
-            String(toAsset),
-            createTime,
-            pairs,
-          )
+        price: fetchAssetPrice(
+          String(toAsset),
+          createTime,
+          pairs,
+          queue,
         ),
         timestamp: createTime,
       },
@@ -192,12 +189,11 @@ export const prepareDribblet = (
         asset: String(toAsset),
         side: "IN",
         amount: Number(toAmount),
-        price: queue.add(() =>
-          fetchAssetPrice(
-            String(toAsset),
-            createTime,
-            pairs,
-          )
+        price: fetchAssetPrice(
+          String(toAsset),
+          createTime,
+          pairs,
+          queue,
         ),
         timestamp: createTime,
       },
@@ -240,12 +236,11 @@ export const prepareManualOrders = async (
           asset: fromAsset,
           side: "OUT",
           amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
-          price: queue.add(() =>
-            fetchAssetPrice(
-              fromAsset,
-              createTime,
-              pairs,
-            )
+          price: fetchAssetPrice(
+            fromAsset,
+            createTime,
+            pairs,
+            queue,
           ),
           timestamp: createTime,
         },
@@ -255,12 +250,11 @@ export const prepareManualOrders = async (
           asset: toAsset,
           side: "IN",
           amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
-          price: queue.add(() =>
-            fetchAssetPrice(
-              toAsset,
-              createTime,
-              pairs,
-            )
+          price: fetchAssetPrice(
+            toAsset,
+            createTime,
+            pairs,
+            queue,
           ),
           timestamp: createTime,
         },
@@ -330,12 +324,11 @@ export const prepareTrade = (
         asset: String(quoteAsset),
         side: side === "SELL" ? "IN" : "OUT",
         amount: Number(cummulativeQuoteQty),
-        price: queue.add(() =>
-          fetchAssetPrice(
-            String(quoteAsset),
-            createTime,
-            pairs,
-          )
+        price: fetchAssetPrice(
+          String(quoteAsset),
+          createTime,
+          pairs,
+          queue,
         ),
         timestamp: createTime,
       },

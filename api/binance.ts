@@ -1,37 +1,28 @@
 import { sleep, Spot } from "../deps.ts";
+import { SpotClass } from "../Spot.d.ts";
 import { binanceAPIaccess } from "./credentials.ts";
 const { apiKey, secretKey } = binanceAPIaccess;
 export const binance = new Spot(apiKey, secretKey);
-export const autoRetry = async <T>(f: () => Promise<T>): Promise<T | false> => {
-  try {
-    return await f();
-  } catch (e) {
-    console.log(e);
-    const timeout = Number(e.response.headers.get("retry-after"));
-    if (timeout <= 0) {
-      console.error(e);
-      return false;
-    }
-    console.log(`waiting ${timeout} seconds`);
-    await sleep(timeout);
-    return await f();
-  }
-};
 
-/* VERSION TO IMPLEMENT
-export const autoRetry = <F extends CallableFunction>(f: F) => async(...args: Parameters<F>) => {
-    try {
-      return await f(...args);
+export const autoRetry = <Method extends keyof SpotClass>(
+  c: SpotClass,
+  m: Method,
+) => {
+  const run = async (
+    ...args: Parameters<SpotClass[Method]>
+  ): Promise<ReturnType<SpotClass[Method]>> => {
+    try { //@ts-expect-error here
+      return await c[m](...args);
     } catch (err) {
-        console.log(err);
-        const timeout = Number(err.response.headers.get('retry-after'));
-        if(timeout <= 0) {
-          console.error(err.response.data.msg);
-          return false;
-        }
-        console.log(`waiting ${timeout} seconds`);
-        await sleep(timeout);
-        return true;
+      const timeout = Number(err.response.headers.get("retry-after"));
+      if (timeout <= 0) {
+        console.error(err);
+        throw new Error(err);
+      }
+      console.log(`waiting ${timeout} seconds`);
+      await sleep(timeout);
+      return run(...args);
     }
   };
-*/
+  return run;
+};
