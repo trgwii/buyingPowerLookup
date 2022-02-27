@@ -1,5 +1,5 @@
-import { DB, PQueue, Row } from "../deps.ts";
-import { autoRetry, binance } from "./binance.ts";
+import { DB, PQueue, Row, sleep } from "../../deps.ts";
+import { binance } from "./mod.ts";
 import {
   BinanceCapitalDeposit,
   BinanceCapitalWithdrawal,
@@ -10,17 +10,41 @@ import {
   BinanceDribblet,
   BinancePair,
   BinanceTrade,
-} from "./dbFunctions.ts";
+} from "./db.ts";
+import { SpotClass } from "./Spot.d.ts";
 
-export const saveTrades = async (binanceDB: DB, queue: PQueue) => {
-  const symbols = binanceDB.query("SELECT symbol FROM pair").map(
+export const autoRetry = <Method extends keyof SpotClass>(
+  c: SpotClass,
+  m: Method,
+) => {
+  const run = async (
+    ...args: Parameters<SpotClass[Method]>
+  ): Promise<ReturnType<SpotClass[Method]>> => {
+    try { //@ts-expect-error here
+      return await c[m](...args);
+    } catch (err) {
+      const timeout = Number(err.response.headers.get("retry-after"));
+      if (timeout <= 0) {
+        console.error(err);
+        throw new Error(err);
+      }
+      console.log(`waiting ${timeout} seconds`);
+      await sleep(timeout);
+      return run(...args);
+    }
+  };
+  return run;
+};
+
+export const trades = async (db: DB, queue: PQueue) => {
+  const symbols = db.query("SELECT symbol FROM pair").map(
     (pair: Row) => String(pair[0]),
   );
-  const binanceHandler = autoRetry(binance, "allOrders");
+  const handler = autoRetry(binance, "allOrders");
   const allAssetTradeRequests = symbols.map((symbol) =>
-    queue.add(() => binanceHandler(symbol))
+    queue.add(() => handler(symbol))
   );
-  const binanceTrade = BinanceTrade(binanceDB);
+  const binanceTrade = BinanceTrade(db);
   binanceTrade.init();
   for (const assetTradeRequests of allAssetTradeRequests) {
     const assetTradesResponse = await assetTradeRequests;
@@ -36,11 +60,11 @@ export const saveTrades = async (binanceDB: DB, queue: PQueue) => {
   }
 };
 
-export const savePairs = async (binanceDB: DB, queue: PQueue) => {
-  const binancePair = BinancePair(binanceDB);
+export const pairs = async (db: DB, queue: PQueue) => {
+  const binancePair = BinancePair(db);
   binancePair.init();
-  const binanceHandler = autoRetry(binance, "exchangeInfo");
-  const exchangeInfoRequest = queue.add(() => binanceHandler());
+  const handler = autoRetry(binance, "exchangeInfo");
+  const exchangeInfoRequest = queue.add(() => handler());
   const exchangeInfoResponse = await exchangeInfoRequest;
   if (!exchangeInfoResponse || !exchangeInfoResponse.data) {
     console.error(exchangeInfoResponse);
@@ -52,8 +76,8 @@ export const savePairs = async (binanceDB: DB, queue: PQueue) => {
   }
 };
 
-export const saveDribblets = async (binanceDB: DB, queue: PQueue) => {
-  const binanceDribblet = BinanceDribblet(binanceDB);
+export const dribblets = async (db: DB, queue: PQueue) => {
+  const binanceDribblet = BinanceDribblet(db);
   binanceDribblet.init();
   const dustLogRequests = [];
   for (let m = 1; m <= 12; m++) {
@@ -61,9 +85,9 @@ export const saveDribblets = async (binanceDB: DB, queue: PQueue) => {
     const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
     const startTime = Date.parse(`2021-${mString}-01`);
     const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
-    const binanceHandler = autoRetry(binance, "dustLog");
+    const handler = autoRetry(binance, "dustLog");
     dustLogRequests.push(queue.add(() =>
-      binanceHandler({
+      handler({
         startTime: startTime,
         endTime: endTime,
       })
@@ -90,8 +114,8 @@ export const saveDribblets = async (binanceDB: DB, queue: PQueue) => {
     }
   }
 };
-export const saveDividends = async (binanceDB: DB, queue: PQueue) => {
-  const binanceDividend = BinanceDividend(binanceDB);
+export const dividends = async (db: DB, queue: PQueue) => {
+  const binanceDividend = BinanceDividend(db);
   binanceDividend.init();
   const devidendRecordsRequests = [];
   for (let m = 1; m <= 12; m++) {
@@ -105,10 +129,10 @@ export const saveDividends = async (binanceDB: DB, queue: PQueue) => {
       const mString = m.toString().length === 1 ? `0${m}` : m.toString();
       const startTime = Date.parse(`2021-${mString}-${dd[0]}`);
       const endTime = Date.parse(`2021-${mString}-${dd[1]}`);
-      const binanceHandler = autoRetry(binance, "assetDevidendRecord");
+      const handler = autoRetry(binance, "assetDevidendRecord");
       devidendRecordsRequests.push(
         queue.add(() =>
-          binanceHandler({
+          handler({
             startTime: startTime,
             endTime: endTime,
             limit: 500,
@@ -133,11 +157,11 @@ export const saveDividends = async (binanceDB: DB, queue: PQueue) => {
     }
   }
 };
-export const saveDeposits = async (binanceDB: DB, queue: PQueue) => {
-  const binanceDeposit = BinanceDeposit(binanceDB);
+export const deposits = async (db: DB, queue: PQueue) => {
+  const binanceDeposit = BinanceDeposit(db);
   binanceDeposit.init();
-  const binanceHandler = autoRetry(binance, "depositWithdrawalHistory");
-  const fiatDepositRequest = queue.add(() => binanceHandler(0));
+  const handler = autoRetry(binance, "depositWithdrawalHistory");
+  const fiatDepositRequest = queue.add(() => handler(0));
   const fiatDepositResponse = await fiatDepositRequest;
   if (!fiatDepositResponse || !fiatDepositResponse.data) {
     console.log(fiatDepositResponse);
@@ -153,8 +177,8 @@ export const saveDeposits = async (binanceDB: DB, queue: PQueue) => {
     binanceDeposit.add(successfulFiatDeposit);
   }
 };
-export const saveConversions = async (binanceDB: DB, queue: PQueue) => {
-  const binanceConversion = BinanceConversion(binanceDB);
+export const conversions = async (db: DB, queue: PQueue) => {
+  const binanceConversion = BinanceConversion(db);
   binanceConversion.init();
 
   const convertTradeHistoryRequests = [];
@@ -163,10 +187,10 @@ export const saveConversions = async (binanceDB: DB, queue: PQueue) => {
     const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
     const startTime = Date.parse(`2021-${mString}-01`);
     const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
-    const binanceHandler = autoRetry(binance, "convertTradeHistory");
+    const handler = autoRetry(binance, "convertTradeHistory");
     convertTradeHistoryRequests.push(
       queue.add(() =>
-        binanceHandler(
+        handler(
           startTime,
           endTime,
         )
@@ -189,18 +213,18 @@ export const saveConversions = async (binanceDB: DB, queue: PQueue) => {
     }
   }
 };
-export const saveCommissions = async (binanceDB: DB, queue: PQueue) => {
-  const binanceCommission = BinanceCommission(binanceDB);
+export const commissions = async (db: DB, queue: PQueue) => {
+  const binanceCommission = BinanceCommission(db);
   binanceCommission.init();
 
-  const pairs = binanceDB.query<[string]>("SELECT symbol FROM pair");
+  const pairs = db.query<[string]>("SELECT symbol FROM pair");
   const symbols = pairs.map(
     (pair) => pair[0],
   );
 
-  const binanceHandler = autoRetry(binance, "myTrades");
+  const handler = autoRetry(binance, "myTrades");
   const allAssetCommissionsRequests = symbols.map((symbol) =>
-    queue.add(() => binanceHandler(symbol))
+    queue.add(() => handler(symbol))
   );
 
   for (const assetCommissionsRequests of allAssetCommissionsRequests) {
@@ -219,11 +243,11 @@ export const saveCommissions = async (binanceDB: DB, queue: PQueue) => {
     }
   }
 };
-export const saveCapitalWithdrawals = async (binanceDB: DB, queue: PQueue) => {
-  const binanceCapitalWithdrawal = BinanceCapitalWithdrawal(binanceDB);
+export const capitalWithdrawals = async (db: DB, queue: PQueue) => {
+  const binanceCapitalWithdrawal = BinanceCapitalWithdrawal(db);
   binanceCapitalWithdrawal.init();
-  const binanceHandler = autoRetry(binance, "withdrawHistory");
-  const capitalWithdrawRequest = queue.add(() => binanceHandler());
+  const handler = autoRetry(binance, "withdrawHistory");
+  const capitalWithdrawRequest = queue.add(() => handler());
   const capitalWithdrawResponse = await capitalWithdrawRequest;
   if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
     console.log(capitalWithdrawResponse);
@@ -238,11 +262,11 @@ export const saveCapitalWithdrawals = async (binanceDB: DB, queue: PQueue) => {
     binanceCapitalWithdrawal.add(capitalWithdraw);
   }
 };
-export const saveCapitalDeposits = async (binanceDB: DB, queue: PQueue) => {
-  const binanceCapitalDeposit = BinanceCapitalDeposit(binanceDB);
+export const capitalDeposits = async (db: DB, queue: PQueue) => {
+  const binanceCapitalDeposit = BinanceCapitalDeposit(db);
   binanceCapitalDeposit.init();
-  const binanceHandler = autoRetry(binance, "depositHistory");
-  const capitalDepositsRequest = queue.add(() => binanceHandler());
+  const handler = autoRetry(binance, "depositHistory");
+  const capitalDepositsRequest = queue.add(() => handler());
   const capitalDepositsResponse = await capitalDepositsRequest;
   if (!capitalDepositsResponse || !capitalDepositsResponse.data) {
     console.log(capitalDepositsResponse);

@@ -1,1 +1,0 @@
-SELECT pair.baseAsset, trade.origQty, pair.quoteAsset, trade.cummulativeQuoteQty, trade.side, tradeFiatPrice.fiatPrice FROM trade JOIN pair ON trade.symbol = pair.symbol JOIN tradeFiatPrice ON trade.tradeID = tradeFiatPrice.tradeID WHERE (trade.side = "SELL" AND pair.baseAsset != "EUR") OR (trade.side = "BUY" AND pair.quoteAsset != "EUR")

@@ -1,9 +1,9 @@
-import { DB, parseCsv, PQueue, Row } from "../deps.ts";
-import { BinanceTransaction } from "./dbFunctions.ts";
-import { fetchAssetPrice } from "./priceFunctions.ts";
-import { transactionBundle } from "./types.ts";
+import { DB, parseCsv, PQueue, Row } from "../../deps.ts";
+import { BinanceTransaction } from "./db.ts";
+import { fetchAssetPrice } from "./price.ts";
+import { transactionBundle } from "./transaction.d.ts";
 
-export const prepareAutoInvest = async (
+export const autoInvest = async (
   pairs: Row[],
   queue: PQueue,
 ): Promise<transactionBundle> => {
@@ -47,7 +47,7 @@ export const prepareAutoInvest = async (
     ];
   });
 };
-export const prepareBuyHistory = async (): Promise<transactionBundle> => {
+export const buyHistory = async (): Promise<transactionBundle> => {
   const filename = "BuyHistory.csv";
   return (
     (await parseCsv(
@@ -84,8 +84,8 @@ export const prepareBuyHistory = async (): Promise<transactionBundle> => {
     ];
   });
 };
-export const prepareCommission = (binanceDB: DB): transactionBundle =>
-  binanceDB.query(
+export const commission = (db: DB): transactionBundle =>
+  db.query(
     "SELECT commissionID, `time` as 'date', commission, commissionAsset FROM commission",
   ).map((conversion) => {
     const [commissionID, date, commission, commissionAsset] = conversion;
@@ -103,13 +103,13 @@ export const prepareCommission = (binanceDB: DB): transactionBundle =>
       },
     ];
   });
-export const prepareConversion = (
-  binanceDB: DB,
+export const conversion = (
+  db: DB,
   pairs: Row[],
   queue: PQueue,
 ): transactionBundle => {
   const type = "conversion";
-  return binanceDB.query(
+  return db.query(
     "SELECT conversionID, fromAsset, toAsset, fromAmount, toAmount, createTime FROM conversion",
   ).map((conversion) => {
     const [conversionID, fromAsset, toAsset, fromAmount, toAmount, date] =
@@ -149,8 +149,8 @@ export const prepareConversion = (
     ];
   });
 };
-export const prepareDividend = (binanceDB: DB): transactionBundle =>
-  binanceDB.query(
+export const dividend = (db: DB): transactionBundle =>
+  db.query(
     "SELECT dividendID, asset, amount, divTime FROM dividend",
   ).map((dividend) => {
     const [dividendID, asset, amount, date] = dividend;
@@ -168,13 +168,13 @@ export const prepareDividend = (binanceDB: DB): transactionBundle =>
       },
     ];
   });
-export const prepareDribblet = (
-  binanceDB: DB,
+export const dribblet = (
+  db: DB,
   pairs: Row[],
   queue: PQueue,
 ): transactionBundle => {
   const type = "dribblet";
-  return binanceDB.query(
+  return db.query(
     "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
   ).map((dribblet) => {
     const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, date] =
@@ -209,7 +209,7 @@ export const prepareDribblet = (
     ];
   });
 };
-export const prepareManualOrders = async (
+export const manualOrders = async (
   pairs: Row[],
   queue: PQueue,
 ): Promise<transactionBundle> => {
@@ -262,7 +262,7 @@ export const prepareManualOrders = async (
     })
   );
 };
-export const prepareSellHistory = async (): Promise<transactionBundle> => {
+export const sellHistory = async (): Promise<transactionBundle> => {
   const filename = "SellHistory.csv";
   return (
     (
@@ -292,13 +292,13 @@ export const prepareSellHistory = async (): Promise<transactionBundle> => {
     })
   );
 };
-export const prepareTrade = (
-  binanceDB: DB,
+export const trade = (
+  db: DB,
   pairs: Row[],
   queue: PQueue,
 ): transactionBundle => {
   const type = "trade";
-  return binanceDB.query(
+  return db.query(
     `SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'date', side FROM trade`,
   ).map((trade) => {
     const [
@@ -344,12 +344,12 @@ export const prepareTrade = (
     ];
   });
 };
-export const saveTransactions = async (
-  binanceDB: DB,
+export const transactions = async (
+  db: DB,
   transactionBundle: transactionBundle | Promise<transactionBundle>,
   hasPrice = true,
 ): Promise<void> => {
-  const binanceTransaction = BinanceTransaction(binanceDB);
+  const binanceTransaction = BinanceTransaction(db);
   for (const transactions of (await transactionBundle)) {
     if (!transactions) continue;
     if (hasPrice && transactions[1] && transactions[1].price === 0) {

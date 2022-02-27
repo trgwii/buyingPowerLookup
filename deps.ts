@@ -10,7 +10,7 @@ export {
 } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
 export type { Operation } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
 import { Spot as _Spot } from "https://esm.sh/@binance/connector@1.7.0?dev";
-import type { SpotClass } from "./Spot.d.ts";
+import type { SpotClass } from "./api/binance/Spot.d.ts";
 export const Spot: typeof SpotClass = _Spot;
 
 import {

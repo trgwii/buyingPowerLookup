@@ -1,6 +1,7 @@
-import { fiatCurrency } from "../config.ts";
-import { PQueue, Row } from "../deps.ts";
-import { autoRetry, binance } from "./binance.ts";
+import { fiatCurrency } from "../../config.ts";
+import { PQueue, Row } from "../../deps.ts";
+import { autoRetry } from "./fetch.ts";
+import { binance } from "./mod.ts";
 
 export const getAvgPrice = async (
   pair: string,

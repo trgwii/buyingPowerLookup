@@ -1,47 +1,65 @@
-import { fiatCurrency } from "../../config.ts";
-import { binanceAPIaccess, coinapiKey } from "../credentials.ts";
-import { coinapiQuote, coingeckoInfo } from "../types.ts";
-import { fetchMyCoins } from "./functions.ts";
-
-const coinapiUrl = `https://rest.coinapi.io/v1/quotes/current`;
-const coinapiReq = await fetch(coinapiUrl, {
-  headers: { "X-CoinAPI-Key": coinapiKey },
-});
-const coinapiData: coinapiQuote[] = await coinapiReq.json();
-const binanceData = coinapiData.filter((d) =>
-  d.symbol_id.includes("BINANCE_SPOT_")
-);
-
+import { DB, PQueue, Spot } from "../../deps.ts";
+import { binanceAPIaccess } from "./credentials.ts";
+import { BinanceTransaction } from "./db.ts";
 const { apiKey, secretKey } = binanceAPIaccess;
-const myCoins = await fetchMyCoins(apiKey, secretKey);
+import {
+  capitalDeposits,
+  capitalWithdrawals,
+  commissions,
+  conversions,
+  deposits,
+  dividends,
+  dribblets,
+  pairs,
+  trades,
+} from "./fetch.ts";
+import {
+  autoInvest,
+  buyHistory,
+  commission,
+  conversion,
+  dividend,
+  dribblet,
+  manualOrders,
+  sellHistory,
+  trade,
+  transactions,
+} from "./transaction.ts";
 
-const coingeckoUrl =
-  `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${fiatCurrency}`;
-const coingeckoReq = await fetch(coingeckoUrl);
-const coingeckoData: coingeckoInfo[] = await coingeckoReq.json();
+export const requestAllData = async (db: DB, queue: PQueue): Promise<void> => {
+  await pairs(db, queue);
+  await Promise.all([
+    capitalDeposits(db, queue),
+    capitalWithdrawals(db, queue),
+    commissions(db, queue),
+    conversions(db, queue),
+    deposits(db, queue),
+    dividends(db, queue),
+    dribblets(db, queue),
+    trades(db, queue),
+  ]);
+};
 
-let totalBalance = 0;
-myCoins.forEach((myCoin) => {
-  const avPairs = binanceData.filter(
-    (binancePair) => binancePair.symbol_id.includes(`_${myCoin.ticker}_`),
+export const convertDataToTransactions = async (
+  db: DB,
+  queue: PQueue,
+): Promise<void> => {
+  const binanceTransaction = BinanceTransaction(db);
+  binanceTransaction.init();
+  const pairs = db.query(
+    `SELECT baseAsset, quoteAsset, symbol
+    FROM pair`,
   );
-  for (const avPair of avPairs) {
-    if (avPair.symbol_id.endsWith(fiatCurrency)) {
-      totalBalance += myCoin.amount * avPair.ask_price;
-      break;
-    }
-    const targetSearch = avPair.symbol_id.match(
-      /BINANCE_SPOT_[A-Z0-9]+_([A-Z0-9]+)/,
-    );
-    if (targetSearch) {
-      const targetTicker = targetSearch[1];
-      const fiatRate = coingeckoData.find((coin) =>
-        coin.symbol.toUpperCase() === targetTicker
-      );
-      if (!fiatRate) continue;
-      totalBalance += myCoin.amount * avPair.ask_price * fiatRate.current_price;
-      break;
-    }
-  }
-});
-console.log(totalBalance);
+  await Promise.all([
+    transactions(db, commission(db), false),
+    transactions(db, dividend(db), false),
+    transactions(db, autoInvest(pairs, queue)),
+    transactions(db, buyHistory()),
+    transactions(db, manualOrders(pairs, queue)),
+    transactions(db, sellHistory()),
+    transactions(db, conversion(db, pairs, queue)),
+    transactions(db, dribblet(db, pairs, queue)),
+    transactions(db, trade(db, pairs, queue)),
+  ]);
+};
+export const binance = new Spot(apiKey, secretKey);

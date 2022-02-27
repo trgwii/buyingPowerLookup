@@ -1,5 +1,5 @@
-import { DB } from "../deps.ts";
-import type { transaction } from "./types.ts";
+import { DB } from "../../deps.ts";
+import type { transaction } from "./transaction.d.ts";
 
 export const BinanceTrade = (db: DB) => ({
   init: () =>
