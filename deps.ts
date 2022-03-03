@@ -4,6 +4,8 @@ export { existsSync } from "https://deno.land/std@0.126.0/fs/mod.ts";
 export { sleep } from "https://deno.land/x/sleep@v1.2.1/mod.ts";
 export { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 export type { Row } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
+export { DB as apiDB } from "https://deno.land/x/sqlite@v2.4.1/mod.ts";
+export { Query } from "https://deno.land/x/sql_builder@v1.8.0/mod.ts";
 export {
   aggregateByYear,
   calculateFIFOCapitalGains,
@@ -19,5 +21,10 @@ import {
 
 import PQueue from "https://deno.land/x/p_queue@1.0.1/mod.ts";
 import type Task from "https://deno.land/x/p_queue@1.0.1/mod.ts";
+export {
+  Application,
+  helpers,
+  Router,
+} from "https://deno.land/x/oak@v10.4.0/mod.ts";
 export { parseCsv, PQueue };
 export type { Task };

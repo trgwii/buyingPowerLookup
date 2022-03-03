@@ -1,9 +1,16 @@
-import { aggregateByYear, calculateFIFOCapitalGains, DB } from "./deps.ts";
+import {
+  aggregateByYear,
+  calculateFIFOCapitalGains,
+  DB,
+  PQueue,
+} from "./deps.ts";
 import type { Operation } from "./deps.ts";
+import { fetchAssetPrice } from "./api/binance/price.ts";
+import { apiConcurrency } from "./config.ts";
 
-const binanceDB = new DB("db/binance.db");
+const db = new DB("db/binance.db");
 
-const allTransaction = binanceDB.query<
+const allTransaction = db.query<
   [number, number, number, string, "IN" | "OUT"]
 >( //1640991600000 <= until 2021
   `SELECT amount, timestamp, price, asset, side FROM \`transaction\` WHERE timestamp < 1640991600000 AND asset != 'EUR' ORDER BY timestamp ASC`,
@@ -34,6 +41,7 @@ for (const operationEntry of operationHistory) {
   assetAmountCheck[operationEntry.symbol] += operationEntry.type === "BUY"
     ? operationEntry.amount
     : -operationEntry.amount;
+
   /*
   console.log(
     operationEntry.symbol,
@@ -70,7 +78,50 @@ for (const operationEntry of operationHistory) {
 const capitalGains = calculateFIFOCapitalGains(operationHistory);
 
 const gainsByYear = aggregateByYear(capitalGains);
-
-// console.log(missingAssets);
+const assets = {};
+const prices = {};
+const queue = new PQueue({
+  concurrency: apiConcurrency,
+});
+const pairs = db.query(
+  `SELECT baseAsset, quoteAsset, symbol
+  FROM pair`,
+);
+for (
+  const [coin, amount] of Object.entries(assetAmountCheck).sort(
+    function (a, b) {
+      return a[0] < b[0] ? -1 : 1;
+    },
+  )
+) {
+  const assetPrice = fetchAssetPrice(coin, 1640991600000, pairs, queue);
+  assets[coin] = Number(amount);
+  prices[coin] = assetPrice;
+}
+let smallBalancesConcat = "";
+let smallBalancesCount = 0;
+let smallBalancesSum = 0;
+let totalBalancesSum = 0;
+for (const coin in assets) {
+  if (Object.prototype.hasOwnProperty.call(assets, coin)) {
+    const assetPriceRequest = await prices[coin];
+    const assetPrice = typeof assetPriceRequest === "number"
+      ? assetPriceRequest
+      : null;
+    if (!assetPrice || assets[coin] * assetPrice <= 1) {
+      smallBalancesConcat += `${coin}, `;
+      smallBalancesCount++;
+      smallBalancesSum += !assetPrice ? 0 : assets[coin] * assetPrice;
+      delete assets[coin];
+    } else {
+      totalBalancesSum += assets[coin] * assetPrice;
+    }
+  }
+}
+console.log(assets);
+console.log("smallBalancesConcat", smallBalancesConcat);
+console.log("smallBalancesCount", smallBalancesCount);
+console.log("smallBalancesSum", smallBalancesSum);
+console.log("totalBalancesSum", totalBalancesSum);
 console.log(gainsByYear);
 console.log(missingCosts);

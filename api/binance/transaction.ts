@@ -1,7 +1,7 @@
 import { DB, parseCsv, PQueue, Row } from "../../deps.ts";
-import { BinanceTransaction } from "./db.ts";
+import { Transaction } from "../db.ts";
 import { fetchAssetPrice } from "./price.ts";
-import { transactionBundle } from "./transaction.d.ts";
+import { transactionBundle } from "../transaction.d.ts";
 
 export const autoInvest = async (
   pairs: Row[],
@@ -349,7 +349,7 @@ export const transactions = async (
   transactionBundle: transactionBundle | Promise<transactionBundle>,
   hasPrice = true,
 ): Promise<void> => {
-  const binanceTransaction = BinanceTransaction(db);
+  const binanceTransaction = Transaction(db);
   for (const transactions of (await transactionBundle)) {
     if (!transactions) continue;
     if (hasPrice && transactions[1] && transactions[1].price === 0) {

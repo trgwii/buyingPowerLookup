@@ -1,6 +1,6 @@
 import { DB, PQueue, Spot } from "../../deps.ts";
 import { binanceAPIaccess } from "./credentials.ts";
-import { BinanceTransaction } from "./db.ts";
+import { Transaction } from "../db.ts";
 const { apiKey, secretKey } = binanceAPIaccess;
 import {
   capitalDeposits,
@@ -44,7 +44,7 @@ export const convertDataToTransactions = async (
   db: DB,
   queue: PQueue,
 ): Promise<void> => {
-  const binanceTransaction = BinanceTransaction(db);
+  const binanceTransaction = Transaction(db);
   binanceTransaction.init();
   const pairs = db.query(
     `SELECT baseAsset, quoteAsset, symbol
