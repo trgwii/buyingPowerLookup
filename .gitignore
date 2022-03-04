@@ -2,3 +2,6 @@ credentials.ts
 cache
 db
 public/bootstrap
+public/hyperactive.min.js
+public/cryptoCurrencyList.json
+public/assets

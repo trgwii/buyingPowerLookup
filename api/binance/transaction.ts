@@ -63,15 +63,26 @@ export const buyHistory = async (): Promise<transactionBundle> => {
       string,
     ][]
   ).map((data, row) => {
-    const [date, , , priceString, , amountAndAsset] = data;
+    const [date, , amountAndFiat, priceString, , amountAndAsset] = data;
     const dateUTC = new Date(date);
     dateUTC.setHours(dateUTC.getHours() + 1);
     const createTime = dateUTC.getTime();
     const amount = amountAndAsset.replace(/[^\d.-]/g, "");
     const asset = amountAndAsset.replace(/[\d .-]/g, "");
+    const fiatAmount = amountAndFiat.replace(/[^\d.-]/g, "");
+    const fiatAsset = amountAndFiat.replace(/[\d .-]/g, "");
     if (!amount.length || !priceString.length) return null;
     const price = parseFloat(priceString.replace(/[^\d.-]/g, ""));
     return [
+      {
+        type: filename,
+        refId: row,
+        asset: fiatAsset,
+        side: "OUT",
+        amount: parseFloat(fiatAmount),
+        price: 1,
+        timestamp: createTime,
+      },
       {
         type: filename,
         refId: row,
@@ -268,14 +279,16 @@ export const sellHistory = async (): Promise<transactionBundle> => {
     (
       (await parseCsv(
         await Deno.readTextFile(`db/${filename}`),
-      )) as [string, string, string, string][]
+      )) as [string, string, string, string, string, string][]
     ).map((data, row) => {
-      const [date, , amountAndAsset, priceString] = data;
+      const [date, , amountAndAsset, priceString, , amountAndFiat] = data;
       const dateUTC = new Date(date);
       dateUTC.setHours(dateUTC.getHours() + 1);
       const createTime = dateUTC.getTime();
       const amount = amountAndAsset.replace(/[^\d.-]/g, "");
       const asset = amountAndAsset.replace(/[\d .-]/g, "");
+      const fiatAmount = amountAndFiat.replace(/[^\d.-]/g, "");
+      const fiatAsset = amountAndFiat.replace(/[\d .-]/g, "");
       if (!amount.length || !priceString.length) return null;
       const price = parseFloat(priceString.replace(/[^\d.-]/g, ""));
       return [
@@ -286,6 +299,15 @@ export const sellHistory = async (): Promise<transactionBundle> => {
           side: "OUT",
           amount: parseFloat(amount),
           price: price,
+          timestamp: createTime,
+        },
+        {
+          type: filename,
+          refId: row,
+          asset: fiatAsset,
+          side: "IN",
+          amount: parseFloat(fiatAmount),
+          price: 1,
           timestamp: createTime,
         },
       ];

@@ -1,4 +1,4 @@
-import { apiDB, Application, helpers, Query, Router } from "../deps.ts";
+import { apiDB, helpers, Order, Query, RouterContext } from "../deps.ts";
 import { propIsNaN } from "../utils.ts";
 
 const NaNError = (
@@ -15,10 +15,17 @@ const NaNError = (
 const endpoints = {
   binance: new apiDB("db/binance.db"),
 };
-
-const app = new Application();
-const router = new Router();
-router.get("/db/:endpoint/:table", (ctx) => {
+export const db = (
+  ctx: RouterContext<
+    "/db/:endpoint/:table",
+    {
+      endpoint: string;
+    } & {
+      table: string;
+    } & Record<string | number, string | undefined>,
+    Record<string, any>
+  >,
+) => {
   const requestUrl = ctx.request.url.href;
   const requestObj = Object.fromEntries(new URL(requestUrl).searchParams);
   ctx.response.status = 200;
@@ -53,11 +60,9 @@ router.get("/db/:endpoint/:table", (ctx) => {
     .table(table)
     .where(id)
     .limit(offset, limit)
+    .order(Order.by("timestamp").asc)
     .build();
   const data = [...db.query(query).asObjects()];
   ctx.response.body = JSON.stringify(data);
   return;
-});
-app.use(router.routes());
-app.use(router.allowedMethods());
-await app.listen({ port: 9000 });
+};
