@@ -16,33 +16,55 @@ export const transactions = (
         { href: "bootstrap/css/bootstrap.min.css", rel: "stylesheet" },
       ),
       header(
+        { class: "text-center" },
         h1("Transactions"),
-        button(
-          { type: "button", name: "prev-page", class: "btn btn-secondary" },
-          "previous page",
-        ),
-        button(
-          { type: "button", name: "cur-page", class: "btn btn-primary" },
-          requestObj.page ?? "1",
-        ),
-        button(
-          { type: "button", name: "next-page", class: "btn btn-secondary" },
-          "next page",
+        div(
+          button(
+            {
+              type: "button",
+              name: "prev-page",
+              class: "btn btn-secondary mx-1",
+            },
+            "previous page",
+          ),
+          button(
+            { type: "button", name: "cur-page", class: "btn btn-primary mx-1" },
+            requestObj.page ?? "1",
+          ),
+          button(
+            {
+              type: "button",
+              name: "next-page",
+              class: "btn btn-secondary mx-1",
+            },
+            "next page",
+          ),
         ),
       ),
       div({ id: "root", class: "p-3" }),
       footer(
-        button(
-          { type: "button", name: "prev-page", class: "btn btn-secondary" },
-          "previous page",
-        ),
-        button(
-          { type: "button", name: "cur-page", class: "btn btn-primary" },
-          requestObj.page ?? "1",
-        ),
-        button(
-          { type: "button", name: "next-page", class: "btn btn-secondary" },
-          "next page",
+        { class: "text-center" },
+        div(
+          button(
+            {
+              type: "button",
+              name: "prev-page",
+              class: "btn btn-secondary mx-1",
+            },
+            "previous page",
+          ),
+          button(
+            { type: "button", name: "cur-page", class: "btn btn-primary mx-1" },
+            requestObj.page ?? "1",
+          ),
+          button(
+            {
+              type: "button",
+              name: "next-page",
+              class: "btn btn-secondary mx-1",
+            },
+            "next page",
+          ),
         ),
       ),
       script(
