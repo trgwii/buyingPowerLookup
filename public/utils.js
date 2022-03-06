@@ -200,6 +200,13 @@ const renderTransactionList = async (
                   ),
                 ),
               ),
+              div(
+                { class: "d-flex align-items-center col-1" },
+                !(IN && "feeAmount" in IN && IN.feeAmount > 0) ? "" : span(
+                  { class: "badge rounded-pill bg-danger" },
+                  `${(IN.feeAmount / IN.amount * 100).toFixed(2)}% fee`,
+                ),
+                ),
             ),
           );
         },
