@@ -78,7 +78,7 @@ const renderTransactionList = async (
           const date = new Date(timestamp).toLocaleDateString("en-US", options);
           return div(
             {
-              class: `col-lg-8`,
+              class: `col-12`,
             },
             lastDate === date ? "" : header(
               { class: `d-flex justify-content-between py-3 ` },
@@ -92,7 +92,7 @@ const renderTransactionList = async (
                   `d-flex justify-content-between py-3 list-group-item list-group-item-action`,
               },
               div(
-                { class: "col-lg-3 d-flex flex-column justify-content-center" },
+                { class: "col-lg-2 d-flex flex-column justify-content-center" },
                 div({}, b(type)),
                 div({}, span(time)),
                 (() => {
@@ -168,17 +168,22 @@ const renderTransactionList = async (
                     ),
                     footer(
                       { class: "d-flex small" },
-                      fiatCurrency === IN.asset || IN.price === 0 ? "" : span(
-                        `≈ ${
-                          (IN.amount * IN.price).toFixed(2)
-                        } ${fiatCurrency}`,
-                      ),
+                      (OUT && fiatCurrency === OUT.asset) ||
+                        fiatCurrency === IN.asset ||
+                        IN.price === 0
+                        ? ""
+                        : span(
+                          `≈ ${
+                            (IN.amount * IN.price).toFixed(2)
+                          } ${fiatCurrency}`,
+                        ),
                       !gainOnSell || fiatCurrency === IN.asset || IN.price === 0
                         ? ""
                         : span({ class: "mx-2" }, "•"),
                       !gainOnSell ? "" : span(
                         {
-                          class: gainOnSell.capitalGains.toFixed(2) === 0
+                          class: gainOnSell.capitalGains.toFixed(2) ===
+                              Number(0).toFixed(2)
                             ? ""
                             : `text-${
                               gainOnSell.capitalGains.toFixed(2) < 0
@@ -186,10 +191,11 @@ const renderTransactionList = async (
                                 : "success"
                             }`,
                         },
-                        `+${
+                        `${gainOnSell.capitalGains.toFixed(2) <= 0 ? "" : "+"}${
                           gainOnSell.capitalGains.toFixed(2)
                         } ${fiatCurrency} ${
-                          gainOnSell.capitalGains.toFixed(2) === 0
+                          gainOnSell.capitalGains.toFixed(2) ===
+                              Number(0).toFixed(2)
                             ? ""
                             : gainOnSell.capitalGains.toFixed(2) < 0
                             ? "loss"
@@ -206,7 +212,7 @@ const renderTransactionList = async (
                   { class: "badge rounded-pill bg-danger" },
                   `${(IN.feeAmount / IN.amount * 100).toFixed(2)}% fee`,
                 ),
-                ),
+              ),
             ),
           );
         },
