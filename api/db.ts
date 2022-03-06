@@ -11,6 +11,7 @@ export const Transaction = (db: DB) => ({
           asset                 CHARACTER(20),
           side                  BOOLEAN,
           amount                FLOAT,
+          feeAmount             FLOAT,
           price                 FLOAT,
           timestamp             INTEGER,
           UNIQUE(type, refId, side)
@@ -19,9 +20,9 @@ export const Transaction = (db: DB) => ({
   add: (transaction: transaction) =>
     db.query(
       `INSERT OR IGNORE INTO \`transaction\` (
-          type, refId, asset, side, amount, price, timestamp
+          type, refId, asset, side, amount, feeAmount, price, timestamp
         ) VALUES (
-          :type, :refId, :asset, :side, :amount, :price, :timestamp
+          :type, :refId, :asset, :side, :amount, :feeAmount, :price, :timestamp
         )`,
       transaction,
     ),

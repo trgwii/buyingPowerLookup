@@ -4,6 +4,7 @@ export type transaction = {
   asset: string;
   side: string;
   amount: number;
+  feeAmount: number;
   price: number;
   timestamp: number;
 };

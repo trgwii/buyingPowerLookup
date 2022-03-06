@@ -27,6 +27,7 @@ export const autoInvest = async (
         asset: fromAsset,
         side: "OUT",
         amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
+        feeAmount: 0,
         price: fetchAssetPrice(
           fromAsset,
           createTime,
@@ -41,6 +42,7 @@ export const autoInvest = async (
         asset: toAsset,
         side: "IN",
         amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
+        feeAmount: 0,
         price: 0,
         timestamp: createTime,
       },
@@ -80,6 +82,7 @@ export const buyHistory = async (): Promise<transactionBundle> => {
         asset: fiatAsset,
         side: "OUT",
         amount: parseFloat(fiatAmount),
+        feeAmount: 0,
         price: 1,
         timestamp: createTime,
       },
@@ -89,31 +92,47 @@ export const buyHistory = async (): Promise<transactionBundle> => {
         asset: asset,
         side: "IN",
         amount: parseFloat(amount),
+        feeAmount: 0,
         price: price,
         timestamp: createTime,
       },
     ];
   });
 };
-export const commission = (db: DB): transactionBundle =>
+export const commission = (
+  db: DB,
+  pairs: Row[],
+  queue: PQueue,
+): transactionBundle =>
   db.query(
-    "SELECT commissionID, `time` as 'date', commission, commissionAsset FROM commission",
-  ).map((conversion) => {
-    const [commissionID, date, commission, commissionAsset] = conversion;
-    const dateUTC = new Date(Number(date));
-    const createTime = dateUTC.getTime() + 1;
-    return [
-      {
-        type: "commission",
-        refId: Number(commissionID),
-        asset: String(commissionAsset),
-        side: "OUT",
-        amount: Number(commission),
-        price: 0,
-        timestamp: Number(createTime),
-      },
-    ];
-  });
+    "SELECT commissionID, symbol, `time` as 'date', commission, commissionAsset FROM commission",
+  )
+    .filter((conversion) => {
+      const [, symbol, , , commissionAsset] = conversion;
+      return !String(symbol).includes(String(commissionAsset));
+    })
+    .map((conversion) => {
+      const [commissionID, , date, commission, commissionAsset] = conversion;
+      const dateUTC = new Date(Number(date));
+      const createTime = dateUTC.getTime() + 1;
+      return [
+        {
+          type: "commission",
+          refId: Number(commissionID),
+          asset: String(commissionAsset),
+          side: "OUT",
+          amount: Number(commission),
+          feeAmount: 0,
+          price: fetchAssetPrice(
+            String(commissionAsset),
+            createTime,
+            pairs,
+            queue,
+          ),
+          timestamp: Number(createTime),
+        },
+      ];
+    });
 export const conversion = (
   db: DB,
   pairs: Row[],
@@ -135,6 +154,7 @@ export const conversion = (
         asset: String(fromAsset),
         side: "OUT",
         amount: Number(fromAmount),
+        feeAmount: 0,
         price: fetchAssetPrice(
           String(fromAsset),
           createTime,
@@ -149,6 +169,7 @@ export const conversion = (
         asset: String(toAsset),
         side: "IN",
         amount: Number(toAmount),
+        feeAmount: 0,
         price: fetchAssetPrice(
           String(toAsset),
           createTime,
@@ -160,7 +181,11 @@ export const conversion = (
     ];
   });
 };
-export const dividend = (db: DB): transactionBundle =>
+export const dividend = (
+  db: DB,
+  pairs: Row[],
+  queue: PQueue,
+): transactionBundle =>
   db.query(
     "SELECT dividendID, asset, amount, divTime FROM dividend",
   ).map((dividend) => {
@@ -174,7 +199,13 @@ export const dividend = (db: DB): transactionBundle =>
         asset: String(asset),
         side: "IN",
         amount: Number(amount),
-        price: 0,
+        feeAmount: 0,
+        price: fetchAssetPrice(
+          String(asset),
+          createTime,
+          pairs,
+          queue,
+        ),
         timestamp: createTime,
       },
     ];
@@ -186,10 +217,17 @@ export const dribblet = (
 ): transactionBundle => {
   const type = "dribblet";
   return db.query(
-    "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', (transferedAmount - serviceChargeAmount) AS 'toAmount', operateTime AS 'dateUTCplus2' FROM dribblet",
+    "SELECT dribbletID, fromAsset, 'BNB' AS 'toAsset', amount as 'fromAmount', transferedAmount AS 'toAmount', serviceChargeAmount AS 'commission', operateTime AS 'dateUTCplus2' FROM dribblet",
   ).map((dribblet) => {
-    const [dribbletID, fromAsset, toAsset, fromAmount, toAmount, date] =
-      dribblet;
+    const [
+      dribbletID,
+      fromAsset,
+      toAsset,
+      fromAmount,
+      toAmount,
+      commission,
+      date,
+    ] = dribblet;
     const dateUTC = new Date(Number(date));
     const createTime = dateUTC.getTime();
     console.log(`iteration pair: ${fromAsset}${toAsset}`);
@@ -200,6 +238,7 @@ export const dribblet = (
         asset: String(toAsset),
         side: "IN",
         amount: Number(toAmount),
+        feeAmount: Number(commission),
         price: fetchAssetPrice(
           String(toAsset),
           createTime,
@@ -214,6 +253,7 @@ export const dribblet = (
         asset: String(fromAsset),
         side: "OUT",
         amount: Number(fromAmount),
+        feeAmount: 0,
         price: 0,
         timestamp: createTime,
       },
@@ -247,6 +287,7 @@ export const manualOrders = async (
           asset: fromAsset,
           side: "OUT",
           amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
+          feeAmount: 0,
           price: fetchAssetPrice(
             fromAsset,
             createTime,
@@ -261,6 +302,7 @@ export const manualOrders = async (
           asset: toAsset,
           side: "IN",
           amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
+          feeAmount: 0,
           price: fetchAssetPrice(
             toAsset,
             createTime,
@@ -298,6 +340,7 @@ export const sellHistory = async (): Promise<transactionBundle> => {
           asset: asset,
           side: "OUT",
           amount: parseFloat(amount),
+          feeAmount: 0,
           price: price,
           timestamp: createTime,
         },
@@ -307,6 +350,7 @@ export const sellHistory = async (): Promise<transactionBundle> => {
           asset: fiatAsset,
           side: "IN",
           amount: parseFloat(fiatAmount),
+          feeAmount: 0,
           price: 1,
           timestamp: createTime,
         },
@@ -321,7 +365,7 @@ export const trade = (
 ): transactionBundle => {
   const type = "trade";
   return db.query(
-    `SELECT tradeID, symbol, executedQty, cummulativeQuoteQty, time AS 'date', side FROM trade`,
+    `SELECT trade.tradeID, trade.symbol, trade.executedQty, trade.cummulativeQuoteQty, trade.time AS 'date', side, commission.commission, commission.commissionAsset FROM trade LEFT JOIN commission ON trade.orderId = commission.orderId`,
   ).map((trade) => {
     const [
       tradeID,
@@ -330,7 +374,12 @@ export const trade = (
       cummulativeQuoteQty,
       date,
       side,
+      commission,
+      commissionAsset,
     ] = trade;
+    const feeAmount = String(symbol).includes(String(commissionAsset))
+      ? commission
+      : 0;
     const dateUTC = new Date(Number(date));
     const createTime = dateUTC.getTime();
     console.log(`iteration symbol: ${symbol}`);
@@ -346,6 +395,7 @@ export const trade = (
         asset: String(quoteAsset),
         side: side === "SELL" ? "IN" : "OUT",
         amount: Number(cummulativeQuoteQty),
+        feeAmount: side === "SELL" ? Number(feeAmount) : 0,
         price: fetchAssetPrice(
           String(quoteAsset),
           createTime,
@@ -360,6 +410,7 @@ export const trade = (
         asset: String(baseAsset),
         side: side === "BUY" ? "IN" : "OUT",
         amount: Number(executedQty),
+        feeAmount: side === "BUY" ? Number(feeAmount) : 0,
         price: 0,
         timestamp: createTime,
       },
@@ -369,12 +420,11 @@ export const trade = (
 export const transactions = async (
   db: DB,
   transactionBundle: transactionBundle | Promise<transactionBundle>,
-  hasPrice = true,
 ): Promise<void> => {
   const binanceTransaction = Transaction(db);
   for (const transactions of (await transactionBundle)) {
     if (!transactions) continue;
-    if (hasPrice && transactions[1] && transactions[1].price === 0) {
+    if (transactions[1] && transactions[1].price === 0) {
       const [quoteAssetTransaction, baseAssetTransaction] = transactions;
       const quotePrice = await quoteAssetTransaction.price;
       if (
@@ -393,8 +443,8 @@ export const transactions = async (
       continue;
     }
     for (const transaction of transactions) {
-      const price = hasPrice ? await transaction.price : 0;
-      if (hasPrice && (!price || typeof price !== "number")) continue;
+      const price = await transaction.price;
+      if (!price || typeof price !== "number") continue;
       binanceTransaction.add({ ...transaction, price: Number(price) });
     }
   }

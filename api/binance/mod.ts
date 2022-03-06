@@ -51,8 +51,8 @@ export const convertDataToTransactions = async (
     FROM pair`,
   );
   await Promise.all([
-    transactions(db, commission(db), false),
-    transactions(db, dividend(db), false),
+    transactions(db, commission(db, pairs, queue)),
+    transactions(db, dividend(db, pairs, queue)),
     transactions(db, autoInvest(pairs, queue)),
     transactions(db, buyHistory()),
     transactions(db, manualOrders(pairs, queue)),
