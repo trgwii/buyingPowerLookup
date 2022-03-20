@@ -45,7 +45,7 @@ export const transaction = (
       } as Operation);
     }
   }
-  const assetAmountCheck = {};
+  const assetAmountCheck: Record<string, number> = {};
   let missingCosts = 0;
   for (const operationEntry of operationHistory) {
     if (!(operationEntry.symbol in assetAmountCheck)) {
