@@ -5,3 +5,5 @@ public/bootstrap
 public/hyperactive.min.js
 public/cryptoCurrencyList.json
 public/assets
+public/chart.js
+public/color-thief.js

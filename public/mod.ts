@@ -1,8 +1,9 @@
 import { fiatCurrency } from "../config.ts";
 import { elements, renderHTML } from "../deps.ts";
-const { input, header, h1, main, div, link, script, footer, button } = elements;
+const { canvas, input, header, h1, main, div, link, script, footer, button } =
+  elements;
 
-export const transactions = (
+export const renderTransactions = (
   { response, request }: { response: any; request: any },
 ) => {
   const requestUrl = request.url.href;
@@ -68,10 +69,42 @@ export const transactions = (
         ),
       ),
       script(
-        { src: "hyperactive.min.js", type: "module" },
+        { src: "hyperactive.min.js", type: "module" }, //https://deno.land/x/hyperactive/mod.ts
       ),
       script(
-        { src: "main.js", type: "module" },
+        { src: "transactions.js", type: "module" },
+      ),
+    ),
+  );
+};
+
+export const renderDashboard = (
+  { response, request }: { response: any; request: any },
+) => {
+  response.status = 200;
+  response.headers.set("Content-Type", "text/html"); // set to html if you want
+  response.body = renderHTML(
+    main(
+      input({ type: "hidden", id: "fiatCurrency", value: fiatCurrency }),
+      link(
+        { href: "bootstrap/css/bootstrap.min.css", rel: "stylesheet" },
+      ),
+      div(
+        { class: "col-4" },
+        canvas({ id: "portfolioPie", width: 100, height: 100 }),
+      ),
+      div({ id: "root", class: "p-3" }),
+      script(
+        { src: "avg-color.js" }, //https://github.com/fast-average-color/fast-average-color
+      ),
+      script(
+        { src: "chart.js" }, //https://cdn.jsdelivr.net/npm/chart.js
+      ),
+      script(
+        { src: "hyperactive.min.js", type: "module" }, //https://deno.land/x/hyperactive/mod.ts
+      ),
+      script(
+        { src: "dashboard.js", type: "module" },
       ),
     ),
   );

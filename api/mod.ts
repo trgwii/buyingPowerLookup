@@ -13,7 +13,7 @@ const NaNError = (
   return ctx;
 };
 
-const endpoints = {
+export const endpoints = {
   binance: new apiDB("db/binance.db"),
 };
 
