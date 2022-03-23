@@ -95,7 +95,7 @@ export const renderDashboard = (
       ),
       div({ id: "root", class: "p-3" }),
       script(
-        { src: "avg-color.js" }, //https://github.com/fast-average-color/fast-average-color
+        { src: "Vibrant.min.js" }, //https://github.com/jariz/vibrant.js/releases/
       ),
       script(
         { src: "chart.js" }, //https://cdn.jsdelivr.net/npm/chart.js

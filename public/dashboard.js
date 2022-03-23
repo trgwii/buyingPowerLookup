@@ -1,4 +1,4 @@
-import { elements, renderHTML } from "./hyperactive.min.js";
+import { elements, renderDOM } from "./hyperactive.min.js";
 const { ol, li, img, span, br, hr } = elements;
 (async () => {
   const assetListData = await fetch("cryptoCurrencyList.json").then((res) =>
@@ -23,7 +23,9 @@ const { ol, li, img, span, br, hr } = elements;
     0,
   );
   console.log(totalPortfolio);
-  document.getElementById("root").innerHTML = renderHTML(
+  const root = document.getElementById("root");
+  renderDOM(
+    root,
     ol(
       ...dashboardList.map((dashboardEntry) =>
         li(
@@ -40,57 +42,68 @@ const { ol, li, img, span, br, hr } = elements;
       ),
     ),
   );
-  requestAnimationFrame(() =>
-    requestAnimationFrame(() => {
-      const labels = dashboardData.map((dashboardEntry) =>
-        dashboardEntry.asset
-      );
+  await Promise.all(
+    [...root.querySelectorAll("img")].map(
+      (img) =>
+        new Promise((res, rej) => {
+          img.addEventListener("load", res, { once: true });
+          img.addEventListener("error", res, { once: true });
+        }),
+    ),
+  );
+  const labels = dashboardData.map((dashboardEntry) => dashboardEntry.asset);
 
-      const data = {
-        labels: labels,
-        datasets: [{
-          label: "Portfolio",
-          backgroundColor: dashboardData.map((dashboardEntry) =>
-            document.querySelector(`#asset${dashboardEntry.asset}`)
-              ? new FastAverageColor().getColor(
-                document.querySelector(`#asset${dashboardEntry.asset}`),
-              ).rgb
-              : "rgb(0, 0, 0)"
-          ),
-          data: dashboardData.map((dashboardEntry) =>
-            parseInt(dashboardEntry.costBasis / totalPortfolio * 100)
-          ),
-        }],
-      };
+  const data = {
+    labels: labels,
+    datasets: [{
+      label: "Portfolio",
+      backgroundColor: dashboardData.map((dashboardEntry) => {
+        const img = document.querySelector(`#asset${dashboardEntry.asset}`);
+        if (!img) return "rgb(0, 0, 0)";
+        const {
+          VibrantSwatch,
+          LightVibrantSwatch,
+          DarkVibrantSwatch,
+        } = new Vibrant(img, 64, 5);
+        if (!(VibrantSwatch || LightVibrantSwatch || DarkVibrantSwatch)) {
+          return "rgb(0, 0, 0)";
+        }
+        const bg =
+          (VibrantSwatch ?? LightVibrantSwatch ?? DarkVibrantSwatch).rgb;
+        return `rgb(${bg.join(", ")})`;
+      }),
+      data: dashboardData.map((dashboardEntry) =>
+        parseInt(dashboardEntry.costBasis / totalPortfolio * 100)
+      ),
+    }],
+  };
 
-      const config = {
-        type: "doughnut",
-        data: data,
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: "bottom",
-            },
-            title: {
-              display: true,
-              text: "Portfolio Allocation",
-            },
-          },
-          tooltips: {
-            callbacks: {
-              label: function (tooltipItem, data) {
-                return dataset.data[tooltipItem.index] + "%";
-              },
-            },
+  const config = {
+    type: "doughnut",
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom",
+        },
+        title: {
+          display: true,
+          text: "Portfolio Allocation",
+        },
+      },
+      tooltips: {
+        callbacks: {
+          label: function (tooltipItem, data) {
+            return dataset.data[tooltipItem.index] + "%";
           },
         },
-      };
+      },
+    },
+  };
 
-      new Chart(
-        document.getElementById("portfolioPie"),
-        config,
-      );
-    })
+  new Chart(
+    document.getElementById("portfolioPie"),
+    config,
   );
 })();
