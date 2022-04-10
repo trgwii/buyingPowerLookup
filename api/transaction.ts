@@ -9,7 +9,7 @@ import {
   Query,
 } from "../deps.ts";
 
-export const transaction = (
+export const transaction = async (
   requestedData: Record<string, any>[],
   db: apiDB,
   table: string,
@@ -101,7 +101,7 @@ export const transaction = (
       assetAmountCheck[operationEntry.symbol] = 0;
     }
   }
-  const gains = [...calculateFIFOCapitalGains(operationHistory)];
+  const gains = [...(await calculateFIFOCapitalGains(operationHistory))];
   console.log(aggregateByYear(gains));
   console.log(missingCosts);
 

@@ -23,45 +23,18 @@ export {
   Router,
 } from "https://deno.land/x/oak@v10.4.0/mod.ts";
 export type { RouterContext } from "https://deno.land/x/oak@v10.4.0/mod.ts";
-import type {
+export type {
   CapitalGains,
   Operation,
+  YearlyCapitalGains,
 } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
-/**
- * https://github.com/bernardobelchior/fifo-capital-gains-js/blob/9ab353d610b7c8f477dfa3241c1619f3ac799471/src/capital-gains.ts#L45
- * calculateCostBasis created from calculateCapitalGainsForSale ^
- */
-export function calculateCostBasis(
-  operationHistory: Operation[],
-  sale: Operation,
-): { costBasis: number; sale: Operation } {
-  let costBasis = 0;
-  const saleCopy = { ...sale };
-
-  operationHistory
-    .filter(
-      ({ type, symbol, date }) =>
-        type === "BUY" && symbol === sale.symbol && date < sale.date,
-    )
-    .forEach((buy) => {
-      const amountSold = Math.min(sale.amount, buy.amount);
-
-      buy.amount -= amountSold;
-      sale.amount -= amountSold;
-      costBasis += amountSold * buy.price;
-    });
-
-  if (sale.amount > 0) {
-    throw Error(
-      `Amount of sales for symbol ${sale.symbol} exceeds the amount of buys.`,
-    );
-  }
-
-  return { costBasis: costBasis, sale: saleCopy };
-}
+export {
+  calculateCostBasis,
+  calculateFIFOCapitalGains,
+} from "./fifo-capital-gains-js-exports.ts";
 export {
   aggregateByYear,
-  calculateFIFOCapitalGains,
 } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
-export type { Operation, Task };
+export { writeCSV } from "https://deno.land/x/csv/mod.ts";
+export type { Task };
 export { parseCsv, PQueue };

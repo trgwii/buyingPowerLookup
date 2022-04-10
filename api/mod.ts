@@ -17,7 +17,7 @@ export const endpoints = {
   binance: new apiDB("db/binance.db"),
 };
 
-export const dbFetch = (
+export const dbFetch = async (
   ctx: RouterContext<
     "/db/:endpoint/:table",
     {
@@ -66,7 +66,7 @@ export const dbFetch = (
     .build();
   const requestedData = [...db.query(query).asObjects()];
   if (table === "transaction") {
-    ctx.response.body = transaction(requestedData, db, table);
+    ctx.response.body = await transaction(requestedData, db, table);
     return;
   }
 
