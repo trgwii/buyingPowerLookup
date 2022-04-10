@@ -82,9 +82,11 @@ export const dribblets = async (db: DB, queue: PQueue) => {
   const dustLogRequests = [];
   for (let m = 1; m <= 12; m++) {
     const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-    const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
-    const startTime = Date.parse(`2021-${mString}-01`);
-    const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
+    const lastDayOfMonth = new Date(2021, m, 0).getDate();
+    const startTime = Date.parse(`2021-${mString}-01 00:00:00:000`);
+    const endTime = Date.parse(
+      `2021-${mString}-${lastDayOfMonth} 23:59:59:999`,
+    );
     const handler = autoRetry(binance, "dustLog");
     dustLogRequests.push(queue.add(() =>
       handler({
@@ -119,7 +121,7 @@ export const dividends = async (db: DB, queue: PQueue) => {
   binanceDividend.init();
   const devidendRecordsRequests = [];
   for (let m = 1; m <= 12; m++) {
-    const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
+    const lastDayOfMonth = new Date(2021, m, 0).getDate();
     for (
       const dd of [
         ["01", "15"],
@@ -127,8 +129,8 @@ export const dividends = async (db: DB, queue: PQueue) => {
       ]
     ) {
       const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-      const startTime = Date.parse(`2021-${mString}-${dd[0]}`);
-      const endTime = Date.parse(`2021-${mString}-${dd[1]}`);
+      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
+      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
       const handler = autoRetry(binance, "assetDevidendRecord");
       devidendRecordsRequests.push(
         queue.add(() =>
@@ -184,9 +186,11 @@ export const conversions = async (db: DB, queue: PQueue) => {
   const convertTradeHistoryRequests = [];
   for (let m = 1; m <= 12; m++) {
     const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-    const lastDayOfMonth = new Date(2021, m + 1, 0).getDate();
-    const startTime = Date.parse(`2021-${mString}-01`);
-    const endTime = Date.parse(`2021-${mString}-${lastDayOfMonth}`);
+    const lastDayOfMonth = new Date(2021, m, 0).getDate();
+    const startTime = Date.parse(`2021-${mString}-01 00:00:00:000`);
+    const endTime = Date.parse(
+      `2021-${mString}-${lastDayOfMonth} 23:59:59:999`,
+    );
     const handler = autoRetry(binance, "convertTradeHistory");
     convertTradeHistoryRequests.push(
       queue.add(() =>
@@ -247,36 +251,66 @@ export const capitalWithdrawals = async (db: DB, queue: PQueue) => {
   const binanceCapitalWithdrawal = BinanceCapitalWithdrawal(db);
   binanceCapitalWithdrawal.init();
   const handler = autoRetry(binance, "withdrawHistory");
-  const capitalWithdrawRequest = queue.add(() => handler());
-  const capitalWithdrawResponse = await capitalWithdrawRequest;
-  if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
-    console.log(capitalWithdrawResponse);
-    return false;
-  }
-  const capitalWithdraws = capitalWithdrawResponse.data.filter(
-    (capitalWithdraws) => capitalWithdraws.status === 6,
-  );
-  if (!capitalWithdraws.length) return false;
-  for (const capitalWithdraw of capitalWithdraws) {
-    console.log(capitalWithdraw);
-    binanceCapitalWithdrawal.add(capitalWithdraw);
+  for (let m = 1; m <= 12; m++) {
+    const lastDayOfMonth = new Date(2021, m, 0).getDate();
+    for (
+      const dd of [
+        ["01", "15"],
+        ["15", lastDayOfMonth],
+      ]
+    ) {
+      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
+      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
+      const capitalWithdrawRequest = queue.add(() =>
+        handler({ startTime: startTime, endTime: endTime })
+      );
+      const capitalWithdrawResponse = await capitalWithdrawRequest;
+      if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
+        console.log(capitalWithdrawResponse);
+        continue;
+      }
+      const capitalWithdraws = capitalWithdrawResponse.data.filter(
+        (capitalWithdraws) => capitalWithdraws.status === 6,
+      );
+      if (!capitalWithdraws.length) continue;
+      for (const capitalWithdraw of capitalWithdraws) {
+        console.log(capitalWithdraw);
+        binanceCapitalWithdrawal.add(capitalWithdraw);
+      }
+    }
   }
 };
 export const capitalDeposits = async (db: DB, queue: PQueue) => {
   const binanceCapitalDeposit = BinanceCapitalDeposit(db);
   binanceCapitalDeposit.init();
   const handler = autoRetry(binance, "depositHistory");
-  const capitalDepositsRequest = queue.add(() => handler());
-  const capitalDepositsResponse = await capitalDepositsRequest;
-  if (!capitalDepositsResponse || !capitalDepositsResponse.data) {
-    console.log(capitalDepositsResponse);
-    return false;
-  }
-  const capitalDeposits = capitalDepositsResponse.data;
-  if (!capitalDeposits.length) return false;
+  for (let m = 1; m <= 12; m++) {
+    const lastDayOfMonth = new Date(2021, m, 0).getDate();
+    for (
+      const dd of [
+        ["01", "15"],
+        ["15", lastDayOfMonth],
+      ]
+    ) {
+      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
+      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
+      const capitalDepositsRequest = queue.add(() =>
+        handler({ startTime: startTime, endTime: endTime })
+      );
+      const capitalDepositsResponse = await capitalDepositsRequest;
+      if (!capitalDepositsResponse || !capitalDepositsResponse.data) {
+        console.log(capitalDepositsResponse);
+        continue;
+      }
+      const capitalDeposits = capitalDepositsResponse.data;
+      if (!capitalDeposits.length) continue;
 
-  for (const capitalDeposit of capitalDeposits) {
-    console.log(capitalDeposit);
-    binanceCapitalDeposit.add(capitalDeposit);
+      for (const capitalDeposit of capitalDeposits) {
+        console.log(capitalDeposit);
+        binanceCapitalDeposit.add(capitalDeposit);
+      }
+    }
   }
 };

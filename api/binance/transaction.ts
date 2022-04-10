@@ -105,14 +105,10 @@ export const commission = (
   queue: PQueue,
 ): transactionBundle =>
   db.query(
-    "SELECT commissionID, symbol, `time` as 'date', commission, commissionAsset FROM commission",
+    "SELECT commissionID, symbol, `time` as 'date', SUM(commission) AS 'amount', commissionAsset FROM commission WHERE symbol NOT LIKE '%' || commissionAsset || '%' GROUP BY orderId",
   )
-    .filter((conversion) => {
-      const [, symbol, , , commissionAsset] = conversion;
-      return !String(symbol).includes(String(commissionAsset));
-    })
     .map((conversion) => {
-      const [commissionID, , date, commission, commissionAsset] = conversion;
+      const [commissionID, , date, amount, commissionAsset] = conversion;
       const dateUTC = new Date(Number(date));
       const createTime = dateUTC.getTime() + 1;
       return [
@@ -121,10 +117,40 @@ export const commission = (
           refId: Number(commissionID),
           asset: String(commissionAsset),
           side: "OUT",
-          amount: Number(commission),
+          amount: Number(amount),
           feeAmount: 0,
           price: fetchAssetPrice(
             String(commissionAsset),
+            createTime,
+            pairs,
+            queue,
+          ),
+          timestamp: Number(createTime),
+        },
+      ];
+    });
+export const cWithdraw = (
+  db: DB,
+  pairs: Row[],
+  queue: PQueue,
+): transactionBundle =>
+  db.query(
+    "SELECT cWithdrawID, applyTime, transactionFee, coin FROM cWithdraw",
+  )
+    .map((cWithdraw) => {
+      const [commissionID, applyTime, transactionFee, coin] = cWithdraw;
+      const dateUTC = new Date(String(applyTime));
+      const createTime = dateUTC.getTime() + 1;
+      return [
+        {
+          type: "cWithdraw",
+          refId: Number(commissionID),
+          asset: String(coin),
+          side: "OUT",
+          amount: Number(transactionFee),
+          feeAmount: 0,
+          price: fetchAssetPrice(
+            String(coin),
             createTime,
             pairs,
             queue,
@@ -365,7 +391,7 @@ export const trade = (
 ): transactionBundle => {
   const type = "trade";
   return db.query(
-    `SELECT trade.tradeID, trade.symbol, trade.executedQty, trade.cummulativeQuoteQty, trade.time AS 'date', side, commission.commission, commission.commissionAsset FROM trade LEFT JOIN commission ON trade.orderId = commission.orderId`,
+    `SELECT trade.tradeID, trade.symbol, trade.executedQty, trade.cummulativeQuoteQty, trade.time AS 'date', side, (SELECT SUM(commission) FROM commission WHERE symbol LIKE '%' || commissionAsset || '%' AND orderId = trade.orderId) AS 'commission' FROM trade`,
   ).map((trade) => {
     const [
       tradeID,

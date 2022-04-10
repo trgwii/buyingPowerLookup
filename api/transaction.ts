@@ -51,22 +51,41 @@ export const transaction = (
     if (!(operationEntry.symbol in assetAmountCheck)) {
       assetAmountCheck[operationEntry.symbol] = 0;
     }
+    if (
+      operationEntry.symbol === "BNB"
+    ) {
+      console.log(
+        operationEntry.type,
+        operationEntry.amount,
+        operationEntry.symbol,
+        operationEntry.date,
+        assetAmountCheck[operationEntry.symbol],
+      );
+    }
     assetAmountCheck[operationEntry.symbol] += operationEntry.type === "BUY"
       ? operationEntry.amount
       : -operationEntry.amount;
-    console.log(
-      operationEntry.symbol,
-      operationEntry.type,
-      assetAmountCheck[operationEntry.symbol],
-      "missing amount",
-      operationEntry.type === "SELL" &&
-        assetAmountCheck[operationEntry.symbol] < 0 && 1.00000000001 *
-          Math.abs(assetAmountCheck[operationEntry.symbol]),
-    );
     if (
       operationEntry.type === "SELL" &&
       assetAmountCheck[operationEntry.symbol] < 0
     ) {
+      if (
+        missingCosts > 0.009 &&
+        operationEntry.price * 1.00000000001 *
+              Math.abs(assetAmountCheck[operationEntry.symbol]) > 0.005
+      ) {
+        console.log(
+          missingCosts,
+          operationEntry.type,
+          operationEntry.amount,
+          operationEntry.symbol,
+          operationEntry.date,
+          assetAmountCheck[operationEntry.symbol],
+          "missing price",
+          operationEntry.price * 1.00000000001 *
+            Math.abs(assetAmountCheck[operationEntry.symbol]),
+        );
+      }
       missingCosts += operationEntry.price * 1.00000000001 *
         Math.abs(assetAmountCheck[operationEntry.symbol]);
       operationHistory.push({

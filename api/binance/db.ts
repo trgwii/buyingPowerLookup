@@ -273,7 +273,7 @@ export const BinanceCommission = (db: DB) => ({
         isBuyer               BOOLEAN,
         isMaker               BOOLEAN,
         isBestMatch           BOOLEAN,
-        UNIQUE(orderId)
+        UNIQUE(id)
       )
   `),
   add: (commission: any) =>
@@ -317,6 +317,7 @@ export const BinanceCapitalWithdrawal = (db: DB) => ({
   init: () =>
     db.query(`
       CREATE TABLE IF NOT EXISTS cWithdraw (
+        cWithdrawID INTEGER PRIMARY KEY AUTOINCREMENT,
         id                       VARCHAR(100),
         amount                   FLOAT,
         transactionFee           FLOAT,

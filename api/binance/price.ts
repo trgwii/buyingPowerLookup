@@ -76,14 +76,14 @@ export const fetchAssetPrice = async (
   }
   console.log("iterating asset over fiat pairs");
   for (const fiatPair of fiatPairs) {
-    const transitoryPairsData = pairs.filter((pair: Row) =>
+    const transitoryPairsData = pairs.filter((pair: Row) => (
       (
-        pair[0] === asset && pair[1] === fiatPair.quoteAsset
+        pair[0] === asset && pair[1] === fiatPair.baseAsset
       ) ||
       (
         pair[0] === fiatPair.quoteAsset && pair[1] === asset
       )
-    );
+    ));
     if (!transitoryPairsData || !transitoryPairsData.length) continue;
     const [baseTransitoryAsset, quoteTransitoryAsset] = transitoryPairsData[0]
       .map((result) => String(result));
@@ -159,6 +159,9 @@ export const fetchAssetPrice = async (
         return avgInvertedPrice * avgTransitoryPrice;
       }
     }
+    console.log(
+      `${asset} not in ${asset}${quoteTransitoryAsset} => ${fiatCurrency}${transitoryAsset}`,
+    );
   }
   console.log(`no price found for ${asset}`);
   return false;

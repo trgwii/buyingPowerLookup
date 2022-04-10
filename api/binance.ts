@@ -10,11 +10,11 @@ await requestAllData(
     concurrency: apiConcurrency / 10,
   }),
 );
-await convertDataToTransactions(
-  db,
-  new PQueue({
-    concurrency: apiConcurrency,
-  }),
-);
+// await convertDataToTransactions(
+//   db,
+//   new PQueue({
+//     concurrency: apiConcurrency,
+//   }),
+// );
 
 db.close();
