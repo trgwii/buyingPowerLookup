@@ -12,6 +12,7 @@ import {
   BinanceTrade,
 } from "./db.ts";
 import { SpotClass } from "./Spot.d.ts";
+import { startYear } from "../../config.ts";
 
 export const autoRetry = <Method extends keyof SpotClass>(
   c: SpotClass,
@@ -42,7 +43,7 @@ export const trades = async (db: DB, queue: PQueue) => {
   );
   const handler = autoRetry(binance, "allOrders");
   const allAssetTradeRequests = symbols.map((symbol) =>
-    queue.add(() => handler(symbol))
+    queue.add(() => handler(symbol, {recvWindow: 60000}))
   );
   const binanceTrade = BinanceTrade(db);
   binanceTrade.init();
@@ -80,20 +81,25 @@ export const dribblets = async (db: DB, queue: PQueue) => {
   const binanceDribblet = BinanceDribblet(db);
   binanceDribblet.init();
   const dustLogRequests = [];
-  for (let m = 1; m <= 12; m++) {
-    const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-    const lastDayOfMonth = new Date(2021, m, 0).getDate();
-    const startTime = Date.parse(`2021-${mString}-01 00:00:00:000`);
-    const endTime = Date.parse(
-      `2021-${mString}-${lastDayOfMonth} 23:59:59:999`,
-    );
-    const handler = autoRetry(binance, "dustLog");
-    dustLogRequests.push(queue.add(() =>
-      handler({
-        startTime: startTime,
-        endTime: endTime,
-      })
-    ));
+  for (let y = startYear; y <= new Date().getFullYear(); y++) {
+    if (new Date(y) > new Date()) break;
+    for (let m = 1; m <= 12; m++) {
+      if (new Date(`${y}-${m}`) > new Date()) break;
+      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      const startTime = Date.parse(`${y}-${mString}-01 00:00:00:000`);
+      const endTime = Date.parse(
+        `${y}-${mString}-${lastDayOfMonth} 23:59:59:999`,
+      );
+      const handler = autoRetry(binance, "dustLog");
+      dustLogRequests.push(queue.add(() =>
+        handler({
+          startTime: startTime,
+          endTime: endTime,
+          recvWindow: 60000
+        })
+      ));
+    }
   }
   for (const dustLogRequest of dustLogRequests) {
     const dustLogResponse = await dustLogRequest;
@@ -120,27 +126,36 @@ export const dividends = async (db: DB, queue: PQueue) => {
   const binanceDividend = BinanceDividend(db);
   binanceDividend.init();
   const devidendRecordsRequests = [];
-  for (let m = 1; m <= 12; m++) {
-    const lastDayOfMonth = new Date(2021, m, 0).getDate();
-    for (
-      const dd of [
-        ["01", "15"],
-        ["15", lastDayOfMonth],
-      ]
-    ) {
-      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
-      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
-      const handler = autoRetry(binance, "assetDevidendRecord");
-      devidendRecordsRequests.push(
-        queue.add(() =>
-          handler({
-            startTime: startTime,
-            endTime: endTime,
-            limit: 500,
-          })
-        ),
-      );
+  for (let y = startYear; y <= new Date().getFullYear(); y++) {
+    if (new Date(y) > new Date()) break;
+    for (let m = 1; m <= 12; m++) {
+      if (new Date(`${y}-${m}`) > new Date()) break;
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      for (
+        const dd of [
+          ["01", "15"],
+          ["15", lastDayOfMonth],
+        ]
+      ) {
+        const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+        const startTime = Date.parse(
+          `${y}-${mString}-${dd[0]} 00:00:00:000`,
+        );
+        const endTime = Date.parse(
+          `${y}-${mString}-${dd[1]} 23:59:59:999`,
+        );
+        const handler = autoRetry(binance, "assetDevidendRecord");
+        devidendRecordsRequests.push(
+          queue.add(() =>
+            handler({
+              startTime: startTime,
+              endTime: endTime,
+              limit: 500,
+              recvWindow: 60000
+            })
+          ),
+        );
+      }
     }
   }
   for (const devidendRecordsRequest of devidendRecordsRequests) {
@@ -163,7 +178,7 @@ export const deposits = async (db: DB, queue: PQueue) => {
   const binanceDeposit = BinanceDeposit(db);
   binanceDeposit.init();
   const handler = autoRetry(binance, "depositWithdrawalHistory");
-  const fiatDepositRequest = queue.add(() => handler(0));
+  const fiatDepositRequest = queue.add(() => handler(0, {recvWindow: 60000}));
   const fiatDepositResponse = await fiatDepositRequest;
   if (!fiatDepositResponse || !fiatDepositResponse.data) {
     console.log(fiatDepositResponse);
@@ -184,22 +199,27 @@ export const conversions = async (db: DB, queue: PQueue) => {
   binanceConversion.init();
 
   const convertTradeHistoryRequests = [];
-  for (let m = 1; m <= 12; m++) {
-    const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-    const lastDayOfMonth = new Date(2021, m, 0).getDate();
-    const startTime = Date.parse(`2021-${mString}-01 00:00:00:000`);
-    const endTime = Date.parse(
-      `2021-${mString}-${lastDayOfMonth} 23:59:59:999`,
-    );
-    const handler = autoRetry(binance, "convertTradeHistory");
-    convertTradeHistoryRequests.push(
-      queue.add(() =>
-        handler(
-          startTime,
-          endTime,
-        )
-      ),
-    );
+  for (let y = startYear; y <= new Date().getFullYear(); y++) {
+    if (new Date(y) > new Date()) break;
+    for (let m = 1; m <= 12; m++) {
+      if (new Date(`${y}-${m}`) > new Date()) break;
+      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      const startTime = Date.parse(`${y}-${mString}-01 00:00:00:000`);
+      const endTime = Date.parse(
+        `${y}-${mString}-${lastDayOfMonth} 23:59:59:999`,
+      );
+      const handler = autoRetry(binance, "convertTradeHistory");
+      convertTradeHistoryRequests.push(
+        queue.add(() =>
+          handler(
+            startTime,
+            endTime,
+            {recvWindow: 60000}
+          )
+        ),
+      );
+    }
   }
   for (const convertTradeHistoryRequest of convertTradeHistoryRequests) {
     const convertTradeHistoryResponse = await convertTradeHistoryRequest;
@@ -228,7 +248,7 @@ export const commissions = async (db: DB, queue: PQueue) => {
 
   const handler = autoRetry(binance, "myTrades");
   const allAssetCommissionsRequests = symbols.map((symbol) =>
-    queue.add(() => handler(symbol))
+    queue.add(() => handler(symbol, {recvWindow: 60000}))
   );
 
   for (const assetCommissionsRequests of allAssetCommissionsRequests) {
@@ -251,32 +271,40 @@ export const capitalWithdrawals = async (db: DB, queue: PQueue) => {
   const binanceCapitalWithdrawal = BinanceCapitalWithdrawal(db);
   binanceCapitalWithdrawal.init();
   const handler = autoRetry(binance, "withdrawHistory");
-  for (let m = 1; m <= 12; m++) {
-    const lastDayOfMonth = new Date(2021, m, 0).getDate();
-    for (
-      const dd of [
-        ["01", "15"],
-        ["15", lastDayOfMonth],
-      ]
-    ) {
-      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
-      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
-      const capitalWithdrawRequest = queue.add(() =>
-        handler({ startTime: startTime, endTime: endTime })
-      );
-      const capitalWithdrawResponse = await capitalWithdrawRequest;
-      if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
-        console.log(capitalWithdrawResponse);
-        continue;
-      }
-      const capitalWithdraws = capitalWithdrawResponse.data.filter(
-        (capitalWithdraws) => capitalWithdraws.status === 6,
-      );
-      if (!capitalWithdraws.length) continue;
-      for (const capitalWithdraw of capitalWithdraws) {
-        console.log(capitalWithdraw);
-        binanceCapitalWithdrawal.add(capitalWithdraw);
+  for (let y = startYear; y <= new Date().getFullYear(); y++) {
+    if (new Date(y) > new Date()) break;
+    for (let m = 1; m <= 12; m++) {
+      if (new Date(`${y}-${m}`) > new Date()) break;
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      for (
+        const dd of [
+          ["01", "15"],
+          ["15", lastDayOfMonth],
+        ]
+      ) {
+        const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+        const startTime = Date.parse(
+          `${y}-${mString}-${dd[0]} 00:00:00:000`,
+        );
+        const endTime = Date.parse(
+          `${y}-${mString}-${dd[1]} 23:59:59:999`,
+        );
+        const capitalWithdrawRequest = queue.add(() =>
+          handler({ startTime: startTime, endTime: endTime , recvWindow: 60000})
+        );
+        const capitalWithdrawResponse = await capitalWithdrawRequest;
+        if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
+          console.log(capitalWithdrawResponse);
+          continue;
+        }
+        const capitalWithdraws = capitalWithdrawResponse.data.filter(
+          (capitalWithdraws) => capitalWithdraws.status === 6,
+        );
+        if (!capitalWithdraws.length) continue;
+        for (const capitalWithdraw of capitalWithdraws) {
+          console.log(capitalWithdraw);
+          binanceCapitalWithdrawal.add(capitalWithdraw);
+        }
       }
     }
   }
@@ -285,31 +313,39 @@ export const capitalDeposits = async (db: DB, queue: PQueue) => {
   const binanceCapitalDeposit = BinanceCapitalDeposit(db);
   binanceCapitalDeposit.init();
   const handler = autoRetry(binance, "depositHistory");
-  for (let m = 1; m <= 12; m++) {
-    const lastDayOfMonth = new Date(2021, m, 0).getDate();
-    for (
-      const dd of [
-        ["01", "15"],
-        ["15", lastDayOfMonth],
-      ]
-    ) {
-      const mString = m.toString().length === 1 ? `0${m}` : m.toString();
-      const startTime = Date.parse(`2021-${mString}-${dd[0]} 00:00:00:000`);
-      const endTime = Date.parse(`2021-${mString}-${dd[1]} 23:59:59:999`);
-      const capitalDepositsRequest = queue.add(() =>
-        handler({ startTime: startTime, endTime: endTime })
-      );
-      const capitalDepositsResponse = await capitalDepositsRequest;
-      if (!capitalDepositsResponse || !capitalDepositsResponse.data) {
-        console.log(capitalDepositsResponse);
-        continue;
-      }
-      const capitalDeposits = capitalDepositsResponse.data;
-      if (!capitalDeposits.length) continue;
+  for (let y = startYear; y <= new Date().getFullYear(); y++) {
+    if (new Date(y) > new Date()) break;
+    for (let m = 1; m <= 12; m++) {
+      if (new Date(`${y}-${m}`) > new Date()) break;
+      const lastDayOfMonth = new Date(y, m, 0).getDate();
+      for (
+        const dd of [
+          ["01", "15"],
+          ["15", lastDayOfMonth],
+        ]
+      ) {
+        const mString = m.toString().length === 1 ? `0${m}` : m.toString();
+        const startTime = Date.parse(
+          `${y}-${mString}-${dd[0]} 00:00:00:000`,
+        );
+        const endTime = Date.parse(
+          `${y}-${mString}-${dd[1]} 23:59:59:999`,
+        );
+        const capitalDepositsRequest = queue.add(() =>
+          handler({ startTime: startTime, endTime: endTime, recvWindow: 60000 })
+        );
+        const capitalDepositsResponse = await capitalDepositsRequest;
+        if (!capitalDepositsResponse || !capitalDepositsResponse.data) {
+          console.log(capitalDepositsResponse);
+          continue;
+        }
+        const capitalDeposits = capitalDepositsResponse.data;
+        if (!capitalDeposits.length) continue;
 
-      for (const capitalDeposit of capitalDeposits) {
-        console.log(capitalDeposit);
-        binanceCapitalDeposit.add(capitalDeposit);
+        for (const capitalDeposit of capitalDeposits) {
+          console.log(capitalDeposit);
+          binanceCapitalDeposit.add(capitalDeposit);
+        }
       }
     }
   }
