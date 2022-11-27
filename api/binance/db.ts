@@ -377,6 +377,7 @@ export const BinanceCapitalDeposit = (db: DB) => ({
     db.query(`
       CREATE TABLE IF NOT EXISTS cDeposit (
         cDepositID INTEGER PRIMARY KEY AUTOINCREMENT,
+        id                       VARCHAR(100),
         amount            FLOAT,
         coin            CHARACTER(20),
         network             CHARACTER(20),
@@ -395,6 +396,7 @@ export const BinanceCapitalDeposit = (db: DB) => ({
   add: (cDeposit: any) =>
     db.query(
       `INSERT OR IGNORE INTO cDeposit (
+          id,
           amount,
           coin,
           network,
@@ -408,6 +410,7 @@ export const BinanceCapitalDeposit = (db: DB) => ({
           unlockConfirm,
           walletType
         ) VALUES (
+          :id,
           :amount,
           :coin,
           :network,
