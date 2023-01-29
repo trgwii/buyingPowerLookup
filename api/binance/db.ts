@@ -24,6 +24,7 @@ export const BinanceTrade = (db: DB) => ({
       isWorking             BOOLEAN,
       workingTime           INTEGER,
       origQuoteOrderQty     FLOAT,
+      selfTradePreventionMode     STRING(10),
       UNIQUE(orderId)
     )
   `),
@@ -48,7 +49,8 @@ export const BinanceTrade = (db: DB) => ({
         updateTime,
         isWorking,
         workingTime,
-        origQuoteOrderQty
+        origQuoteOrderQty,
+        selfTradePreventionMode
       ) VALUES (
         :symbol,
         :orderId,
@@ -68,7 +70,8 @@ export const BinanceTrade = (db: DB) => ({
         :updateTime,
         :isWorking,
         :workingTime,
-        :origQuoteOrderQty
+        :origQuoteOrderQty,
+        :selfTradePreventionMode
       )`,
       trade,
     ),
