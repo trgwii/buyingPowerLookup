@@ -22,6 +22,7 @@ export const BinanceTrade = (db: DB) => ({
       time                  INTEGER,
       updateTime            INTEGER,
       isWorking             BOOLEAN,
+      workingTime           INTEGER,
       origQuoteOrderQty     FLOAT,
       UNIQUE(orderId)
     )
@@ -46,6 +47,7 @@ export const BinanceTrade = (db: DB) => ({
         time,
         updateTime,
         isWorking,
+        workingTime,
         origQuoteOrderQty
       ) VALUES (
         :symbol,
@@ -65,6 +67,7 @@ export const BinanceTrade = (db: DB) => ({
         :time,
         :updateTime,
         :isWorking,
+        :workingTime,
         :origQuoteOrderQty
       )`,
       trade,
