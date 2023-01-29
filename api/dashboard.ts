@@ -43,7 +43,7 @@ export const dashboard = (
     .select("*")
     .table("transaction")
     .where(`asset != '${fiatCurrency}'`)
-    .where("timestamp < 1640991600000")
+    .where("timestamp < 1672531200000")
     .order(Order.by("timestamp").asc)
     .build();
 
