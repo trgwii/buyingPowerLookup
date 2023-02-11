@@ -3,6 +3,7 @@ import { binanceAPIaccess } from "./credentials.ts";
 import { Transaction } from "../db.ts";
 const { apiKey, secretKey } = binanceAPIaccess;
 import {
+  backupPricePairs,
   capitalDeposits,
   capitalWithdrawals,
   commissions,
@@ -21,6 +22,8 @@ import {
   cWithdraw,
   dividend,
   dribblet,
+  manualCommissions,
+  manualDividends,
   manualOrders,
   sellHistory,
   trade,
@@ -47,10 +50,15 @@ export const convertDataToTransactions = async (
 ): Promise<void> => {
   const binanceTransaction = Transaction(db);
   binanceTransaction.init();
-  const pairs = db.query(
+  const newPairs = db.query(
     `SELECT baseAsset, quoteAsset, symbol
     FROM pair`,
   );
+  const backedUpPairs = await backupPricePairs();
+  const pairs = [
+    ...newPairs,
+    ...backedUpPairs.filter((pair) => newPairs.indexOf(pair) < 0),
+  ];
   await Promise.all([
     transactions(db, commission(db, pairs, queue)),
     transactions(db, dividend(db, pairs, queue)),
@@ -58,6 +66,8 @@ export const convertDataToTransactions = async (
     transactions(db, buyHistory()),
     transactions(db, cWithdraw(db, pairs, queue)),
     transactions(db, manualOrders(pairs, queue)),
+    transactions(db, manualDividends(pairs, queue)),
+    transactions(db, manualCommissions(pairs, queue)),
     transactions(db, sellHistory()),
     transactions(db, conversion(db, pairs, queue)),
     transactions(db, dribblet(db, pairs, queue)),
