@@ -5,12 +5,12 @@ import { convertDataToTransactions, requestAllData } from "./binance/mod.ts";
 
 const db = new DB("db/binance.db");
 
-/*await requestAllData(
+await requestAllData(
   db,
   new PQueue({
     concurrency: apiConcurrency / 10,
   }),
-);*/
+);
 await Promise.all(
   backupPriceData(
     db.query(
