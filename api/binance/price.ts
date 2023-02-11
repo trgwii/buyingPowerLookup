@@ -1,7 +1,33 @@
 import { fiatCurrency } from "../../config.ts";
-import { PQueue, Row } from "../../deps.ts";
+import { formatDate, parseCsv, PQueue, Row } from "../../deps.ts";
 import { autoRetry } from "./fetch.ts";
 import { binance } from "./mod.ts";
+import { backupPriceDirBinance } from "./paths.ts";
+
+export const getAvgBackupPrice = async (
+  pair: string,
+  timestamp: number,
+): Promise<number | boolean> => {
+  console.log("checking backup price data");
+  try {
+    const priceData = await parseCsv(
+      await Deno.readTextFile(
+        `${backupPriceDirBinance}/${pair}.csv`,
+      ),
+    );
+    const date = new Date(timestamp);
+    const dateFormatted = formatDate(date, "yyyy-MM-dd");
+    const priceEntry = priceData.find((priceEntry) =>
+      priceEntry[1] === dateFormatted
+    );
+    if (!priceEntry) return false;
+    const [, , , Open, High, Low, Close] = priceEntry.map((p) => Number(p));
+    return (Open + High + Low + Close) / 4;
+  } catch (e) {
+    console.log("no backup price data");
+    return false;
+  }
+};
 
 export const getAvgPrice = async (
   pair: string,
@@ -17,11 +43,14 @@ export const getAvgPrice = async (
     )
   );
   const candlesResponse = await candlesRequest;
-  if (!(candlesResponse && "data" in candlesResponse)) return false;
+  if (!(candlesResponse && "data" in candlesResponse)) {
+    console.log("no candle found");
+    return await getAvgBackupPrice(pair, timestamp);
+  }
   const candlesData = candlesResponse.data;
   if (!candlesData.length) {
-    console.log("no candle found");
-    return false;
+    console.log("no data in candle");
+    return await getAvgBackupPrice(pair, timestamp);
   }
   const firstCandle = candlesData[0];
   const candleOpenPrice = Number(firstCandle[1]);
