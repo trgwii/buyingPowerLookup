@@ -16,7 +16,7 @@ export interface CapitalGains {
 export async function calculateFIFOCapitalGains(
   operationHistory: Operation[],
 ): Promise<CapitalGains[]> {
-  const capitalGainsFile = "./db/capitalGains.csv";
+  const capitalGainsFile = "./references/capitalGains.csv";
   await Deno.remove(capitalGainsFile);
   const f = await Deno.open(capitalGainsFile, {
     write: true,

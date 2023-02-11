@@ -1,6 +1,7 @@
 credentials.ts
 cache
 db
+references
 backupPriceData
 public/bootstrap
 public/hyperactive.min.js
