@@ -1,4 +1,4 @@
-import { DB, PQueue, Row, sleep } from "../../deps.ts";
+import { DB, parseCsv, PQueue, Row, sleep } from "../../deps.ts";
 import { binance } from "./mod.ts";
 import {
   BinanceCapitalDeposit,
@@ -370,3 +370,31 @@ export const backupPriceData = (pairs: Row[], queue: PQueue) =>
         await res.body.pipeTo(file.writable);
       }),
   );
+
+export const backupPricePairs = async (): Promise<string[][]> => {
+  const backupPricePairs = [];
+  for await (const dirEntry of Deno.readDir(backupPriceDirBinance)) {
+    const fileName = dirEntry.name;
+    const priceData = await parseCsv(
+      await Deno.readTextFile(
+        `${backupPriceDirBinance}/${fileName}`,
+      ),
+    );
+    const baseAsset = priceData[1][7]?.replace("Volume ", "");
+    const quoteAsset = priceData[1][8]?.replace("Volume ", "");
+    if (
+      !(
+        typeof baseAsset === "string" &&
+        typeof quoteAsset === "string"
+      )
+    ) {
+      continue;
+    }
+    backupPricePairs.push([
+      baseAsset,
+      quoteAsset,
+      `${baseAsset}${quoteAsset}`,
+    ]);
+  }
+  return backupPricePairs;
+};
