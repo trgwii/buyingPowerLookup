@@ -104,15 +104,22 @@ export const fetchAssetPrice = async (
     console.log(`${asset} not in ${fiatPair.baseAsset}${fiatPair.quoteAsset}`);
   }
   console.log("iterating asset over fiat pairs");
+  const transitoryPriceResults: number[] = [];
   for (const fiatPair of fiatPairs) {
-    const transitoryPairsData = pairs.filter((pair: Row) => (
-      (
-        pair[0] === asset && pair[1] === fiatPair.baseAsset
-      ) ||
-      (
-        pair[0] === fiatPair.quoteAsset && pair[1] === asset
-      )
-    ));
+    const transitoryPairsData = pairs.filter((pair: Row) => {
+      return (
+        (
+          asset === pair[0] &&
+          fiatPair.quoteAsset === fiatCurrency &&
+          pair[1] === fiatPair.baseAsset
+        ) ||
+        (
+          asset === pair[0] &&
+          fiatPair.baseAsset === fiatCurrency &&
+          pair[1] === fiatPair.quoteAsset
+        )
+      );
+    });
     if (!transitoryPairsData || !transitoryPairsData.length) continue;
     const [baseTransitoryAsset, quoteTransitoryAsset] = transitoryPairsData[0]
       .map((result) => String(result));
@@ -173,7 +180,7 @@ export const fetchAssetPrice = async (
         if (!(avgPrice && typeof avgPrice === "number")) {
           continue;
         }
-        return avgTransitoryPrice / avgPrice;
+        transitoryPriceResults.push(avgTransitoryPrice / avgPrice);
       } else if (transitoryAsset === fiatPair.baseAsset) {
         console.log("requesting pair", `${transitoryAsset}${fiatCurrency}`);
         const avgInvertedPrice = await getAvgPrice(
@@ -185,12 +192,18 @@ export const fetchAssetPrice = async (
         if (!(avgInvertedPrice && typeof avgInvertedPrice === "number")) {
           continue;
         }
-        return avgInvertedPrice * avgTransitoryPrice;
+        transitoryPriceResults.push(avgInvertedPrice * avgTransitoryPrice);
       }
     }
     console.log(
       `${asset} not in ${asset}${quoteTransitoryAsset} => ${fiatCurrency}${transitoryAsset}`,
     );
+  }
+  if (transitoryPriceResults.length) {
+    return transitoryPriceResults.reduce(
+      (accumulator, currentValue) => accumulator + currentValue,
+      0,
+    ) / transitoryPriceResults.length;
   }
   console.log(`no price found for ${asset}`);
   return false;
