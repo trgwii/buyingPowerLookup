@@ -10,7 +10,6 @@ import { Spot as _Spot } from "https://esm.sh/@binance/connector@2.0.0-rc.4?dev"
 import type { SpotClass } from "./api/binance/Spot.d.ts";
 export const Spot: typeof SpotClass = _Spot;
 export { elements, renderHTML } from "https://deno.land/x/hyperactive/mod.ts";
-
 import {
   parse as parseCsv,
 } from "https://deno.land/std@0.140.0/encoding/csv.ts";
@@ -37,4 +36,5 @@ export {
 } from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
 export { writeCSV } from "https://deno.land/x/csv/mod.ts";
 export type { Task };
-export { parseCsv, PQueue };
+import { format as formatDate } from "https://deno.land/std@0.91.0/datetime/mod.ts";
+export { formatDate, parseCsv, PQueue };
