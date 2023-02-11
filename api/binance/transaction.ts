@@ -99,6 +99,45 @@ export const buyHistory = async (): Promise<transactionBundle> => {
     ];
   });
 };
+export const manualCommissions = async (
+  pairs: Row[],
+  queue: PQueue,
+): transactionBundle =>{
+  const filename = "ManualCommissions.csv";
+  return (
+    (
+      (
+        await parseCsv(
+          await Deno.readTextFile(`db/${filename}`),
+        )
+      ) as [string, string, string, string, string][]
+    ).map((data, row) => {
+      const [date, , fromAmountAndAsset, , status] = data;
+      const dateUTC = new Date(date);
+      dateUTC.setHours(dateUTC.getHours() + 1);
+      const createTime = dateUTC.getTime();
+      const fromAsset = fromAmountAndAsset.replace(/[\d .-]/g, "");
+      if (status !== "Success") return null;
+      return [
+        {
+          type: filename,
+          refId: row,
+          asset: fromAsset,
+          side: "OUT",
+          amount: Number(fromAmountAndAsset.replace(/[^\d.-]/g, "")),
+          feeAmount: 0,
+          price: fetchAssetPrice(
+            fromAsset,
+            createTime,
+            pairs,
+            queue,
+          ),
+          timestamp: createTime,
+        },
+      ];
+    })
+  );
+}
 export const commission = (
   db: DB,
   pairs: Row[],
@@ -207,6 +246,45 @@ export const conversion = (
     ];
   });
 };
+export const manualDividends = async (
+  pairs: Row[],
+  queue: PQueue,
+  ): transactionBundle =>{
+  const filename = "ManualDividends.csv";
+  return (
+    (
+      (
+        await parseCsv(
+          await Deno.readTextFile(`db/${filename}`),
+        )
+      ) as [string, string, string, string, string][]
+    ).map((data, row) => {
+      const [date, , toAmountAndAsset, , status] = data;
+      const dateUTC = new Date(date);
+      dateUTC.setHours(dateUTC.getHours() + 1);
+      const createTime = dateUTC.getTime();
+      const toAsset = toAmountAndAsset.replace(/[\d .-]/g, "");
+      if (status !== "Success") return null;
+      return [
+        {
+          type: "dividend",
+          refId: row,
+          asset: toAsset,
+          side: "IN",
+          amount: Number(toAmountAndAsset.replace(/[^\d.-]/g, "")),
+          feeAmount: 0,
+          price: fetchAssetPrice(
+            toAsset,
+            createTime,
+            pairs,
+            queue,
+          ),
+          timestamp: createTime,
+        },
+      ];
+    })
+  );
+}
 export const dividend = (
   db: DB,
   pairs: Row[],
@@ -453,12 +531,6 @@ export const transactions = async (
     if (transactions[1] && transactions[1].price === 0) {
       const [quoteAssetTransaction, baseAssetTransaction] = transactions;
       const quotePrice = await quoteAssetTransaction.price;
-      if (
-        !quotePrice || typeof quotePrice !== "number" ||
-        baseAssetTransaction.amount <= 0
-      ) {
-        continue;
-      }
       const basePrice = quoteAssetTransaction.amount *
         quotePrice / baseAssetTransaction.amount;
       binanceTransaction.add({
@@ -470,7 +542,6 @@ export const transactions = async (
     }
     for (const transaction of transactions) {
       const price = await transaction.price;
-      if (!price || typeof price !== "number") continue;
       binanceTransaction.add({ ...transaction, price: Number(price) });
     }
   }
