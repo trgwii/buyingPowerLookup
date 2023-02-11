@@ -13,6 +13,7 @@ import {
 } from "./db.ts";
 import { SpotClass } from "./Spot.d.ts";
 import { startYear } from "../../config.ts";
+import { backupPriceDirBinance } from "./paths.ts";
 
 export const autoRetry = <Method extends keyof SpotClass>(
   c: SpotClass,
@@ -43,7 +44,7 @@ export const trades = async (db: DB, queue: PQueue) => {
   );
   const handler = autoRetry(binance, "allOrders");
   const allAssetTradeRequests = symbols.map((symbol) =>
-    queue.add(() => handler(symbol, {recvWindow: 60000}))
+    queue.add(() => handler(symbol, { recvWindow: 60000 }))
   );
   const binanceTrade = BinanceTrade(db);
   binanceTrade.init();
@@ -96,7 +97,7 @@ export const dribblets = async (db: DB, queue: PQueue) => {
         handler({
           startTime: startTime,
           endTime: endTime,
-          recvWindow: 60000
+          recvWindow: 60000,
         })
       ));
     }
@@ -151,7 +152,7 @@ export const dividends = async (db: DB, queue: PQueue) => {
               startTime: startTime,
               endTime: endTime,
               limit: 500,
-              recvWindow: 60000
+              recvWindow: 60000,
             })
           ),
         );
@@ -178,7 +179,7 @@ export const deposits = async (db: DB, queue: PQueue) => {
   const binanceDeposit = BinanceDeposit(db);
   binanceDeposit.init();
   const handler = autoRetry(binance, "depositWithdrawalHistory");
-  const fiatDepositRequest = queue.add(() => handler(0, {recvWindow: 60000}));
+  const fiatDepositRequest = queue.add(() => handler(0, { recvWindow: 60000 }));
   const fiatDepositResponse = await fiatDepositRequest;
   if (!fiatDepositResponse || !fiatDepositResponse.data) {
     console.log(fiatDepositResponse);
@@ -215,7 +216,7 @@ export const conversions = async (db: DB, queue: PQueue) => {
           handler(
             startTime,
             endTime,
-            {recvWindow: 60000}
+            { recvWindow: 60000 },
           )
         ),
       );
@@ -248,7 +249,7 @@ export const commissions = async (db: DB, queue: PQueue) => {
 
   const handler = autoRetry(binance, "myTrades");
   const allAssetCommissionsRequests = symbols.map((symbol) =>
-    queue.add(() => handler(symbol, {recvWindow: 60000}))
+    queue.add(() => handler(symbol, { recvWindow: 60000 }))
   );
 
   for (const assetCommissionsRequests of allAssetCommissionsRequests) {
@@ -290,7 +291,7 @@ export const capitalWithdrawals = async (db: DB, queue: PQueue) => {
           `${y}-${mString}-${dd[1]} 23:59:59:999`,
         );
         const capitalWithdrawRequest = queue.add(() =>
-          handler({ startTime: startTime, endTime: endTime , recvWindow: 60000})
+          handler({ startTime: startTime, endTime: endTime, recvWindow: 60000 })
         );
         const capitalWithdrawResponse = await capitalWithdrawRequest;
         if (!capitalWithdrawResponse || !capitalWithdrawResponse.data) {
@@ -350,3 +351,22 @@ export const capitalDeposits = async (db: DB, queue: PQueue) => {
     }
   }
 };
+
+export const backupPriceData = (pairs: Row[], queue: PQueue) =>
+  pairs.map(
+    (pair) =>
+      queue.add(async () => {
+        const res = await fetch(
+          `https://www.cryptodatadownload.com/cdd/Binance_${pair}_d.csv`,
+        );
+        if (res.status !== 200 || !res.body) {
+          console.log(res);
+          return;
+        }
+        const file = await Deno.open(`${backupPriceDirBinance}/${pair}.csv`, {
+          create: true,
+          write: true,
+        });
+        await res.body.pipeTo(file.writable);
+      }),
+  );
