@@ -20,6 +20,7 @@ export const transaction = async (
     .table(table)
     .where(`asset != '${fiatCurrency}'`)
     .where(`timestamp <= '${Math.max(...timestamps)}'`)
+    .where("timestamp < 1672531200000")
     .order(Order.by("timestamp").asc)
     .build();
   const allTransactions = [...db.query(queryAll).asObjects()];

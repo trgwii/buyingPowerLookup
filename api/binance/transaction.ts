@@ -102,7 +102,7 @@ export const buyHistory = async (): Promise<transactionBundle> => {
 export const manualCommissions = async (
   pairs: Row[],
   queue: PQueue,
-): transactionBundle =>{
+): Promise<transactionBundle> => {
   const filename = "ManualCommissions.csv";
   return (
     (
@@ -137,7 +137,7 @@ export const manualCommissions = async (
       ];
     })
   );
-}
+};
 export const commission = (
   db: DB,
   pairs: Row[],
@@ -249,7 +249,7 @@ export const conversion = (
 export const manualDividends = async (
   pairs: Row[],
   queue: PQueue,
-  ): transactionBundle =>{
+): Promise<transactionBundle> => {
   const filename = "ManualDividends.csv";
   return (
     (
@@ -267,7 +267,7 @@ export const manualDividends = async (
       if (status !== "Success") return null;
       return [
         {
-          type: "dividend",
+          type: filename,
           refId: row,
           asset: toAsset,
           side: "IN",
@@ -284,7 +284,7 @@ export const manualDividends = async (
       ];
     })
   );
-}
+};
 export const dividend = (
   db: DB,
   pairs: Row[],
