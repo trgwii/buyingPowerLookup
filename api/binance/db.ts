@@ -228,6 +228,7 @@ export const BinanceConversion = (db: DB) => ({
         ratio                     FLOAT,
         inverseRatio              FLOAT,
         createTime                INTEGER,
+        side                      CHARACTER(20),
         UNIQUE(orderId)
       )
   `),
@@ -243,7 +244,8 @@ export const BinanceConversion = (db: DB) => ({
           toAmount,
           ratio,
           inverseRatio,
-          createTime
+          createTime,
+          side
         ) VALUES (
           :quoteId,
           :orderId,
@@ -254,7 +256,8 @@ export const BinanceConversion = (db: DB) => ({
           :toAmount,
           :ratio,
           :inverseRatio,
-          :createTime
+          :createTime,
+          :side
         )`,
       conversion,
     ),
@@ -338,6 +341,7 @@ export const BinanceCapitalWithdrawal = (db: DB) => ({
         confirmNo                INTEGER,
         walletType               INTEGER,
         txKey                    VARCHAR(100),
+        completeTime             VARCHAR(50),
         UNIQUE(txId)
       )
   `),
@@ -357,7 +361,8 @@ export const BinanceCapitalWithdrawal = (db: DB) => ({
           info,
           confirmNo,
           walletType,
-          txKey
+          txKey,
+          completeTime
         ) VALUES (
           :id,
           :amount,
@@ -372,7 +377,8 @@ export const BinanceCapitalWithdrawal = (db: DB) => ({
           :info,
           :confirmNo,
           :walletType,
-          :txKey
+          :txKey,
+          :completeTime
         )`,
       cWithdraw,
     ),
