@@ -1,5 +1,5 @@
 import { apiConcurrency } from "../config.ts";
-import { DB, PQueue, sleep } from "../deps.ts";
+import { DB, PQueue } from "../deps.ts";
 import { backupPriceData } from "./binance/fetch.ts";
 import { convertDataToTransactions, requestAllData } from "./binance/mod.ts";
 
