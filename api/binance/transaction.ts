@@ -532,10 +532,10 @@ export const transactions = async (
       const [quoteAssetTransaction, baseAssetTransaction] = transactions;
       const quotePrice = await quoteAssetTransaction.price;
       const basePrice = quoteAssetTransaction.amount *
-        quotePrice / baseAssetTransaction.amount;
+        Number(quotePrice) / baseAssetTransaction.amount;
       binanceTransaction.add({
         ...quoteAssetTransaction,
-        price: quotePrice,
+        price: Number(quotePrice),
       });
       binanceTransaction.add({ ...baseAssetTransaction, price: basePrice });
       continue;

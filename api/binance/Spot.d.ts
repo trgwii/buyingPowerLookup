@@ -1,4 +1,4 @@
-import type { AxiosResponse } from "https://esm.sh/axios@0.21.4";
+import type { AxiosResponse } from "npm:axios@0.21.4";
 
 export declare class SpotClass {
   constructor(apiKey: string, secretKey: string);

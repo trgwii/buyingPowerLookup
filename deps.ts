@@ -6,7 +6,7 @@ export { DB } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 export type { Row } from "https://deno.land/x/sqlite@v3.2.1/mod.ts";
 export { DB as apiDB } from "https://deno.land/x/sqlite@v2.4.1/mod.ts";
 export { Order, Query } from "https://deno.land/x/sql_builder@v1.9.0/mod.ts";
-import { Spot as _Spot } from "https://esm.sh/@binance/connector@2.0.0-rc.4?dev";
+import { Spot as _Spot } from "npm:@binance/connector@2.0.0-rc.4";
 import type { SpotClass } from "./api/binance/Spot.d.ts";
 export const Spot: typeof SpotClass = _Spot;
 export { elements, renderHTML } from "https://deno.land/x/hyperactive/mod.ts";
@@ -23,17 +23,15 @@ export {
 } from "https://deno.land/x/oak@v10.4.0/mod.ts";
 export type { RouterContext } from "https://deno.land/x/oak@v10.4.0/mod.ts";
 export type {
+  aggregateByYear,
   CapitalGains,
   Operation,
   YearlyCapitalGains,
-} from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
+} from "npm:fifo-capital-gains-js@0.1.1";
 export {
   calculateCostBasis,
   calculateFIFOCapitalGains,
 } from "./fifo-capital-gains-js-exports.ts";
-export {
-  aggregateByYear,
-} from "https://esm.sh/fifo-capital-gains-js@0.1.1?dev";
 export { writeCSV } from "https://deno.land/x/csv/mod.ts";
 export type { Task };
 import { format as formatDate } from "https://deno.land/std@0.91.0/datetime/mod.ts";

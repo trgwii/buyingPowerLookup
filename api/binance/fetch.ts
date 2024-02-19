@@ -25,14 +25,15 @@ export const autoRetry = <Method extends keyof SpotClass>(
     try { //@ts-expect-error here
       return await c[m](...args);
     } catch (err) {
-      const errorMessage = err?.response?.data.msg ??'';
-      if(errorMessage.includes('recvWindow')){
+      const errorMessage = err?.response?.data.msg ?? "";
+      if (errorMessage.includes("recvWindow")) {
         try { //@ts-expect-error here
           return await c[m](...args);
         } catch (e) {
           throw new Error(e);
         }
       }
+      throw err;
       const timeout = Number(err.response.headers.get("retry-after"));
       if (timeout <= 0) {
         throw new Error(errorMessage);
